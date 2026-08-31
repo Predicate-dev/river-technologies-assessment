@@ -99,7 +99,15 @@ def extract_fund(
         # The only class-level source for these filers, and therefore the only
         # way to meet the institutional-class requirement.
         try:
-            class_level, _tables = highlights.extract_all(fund, client, anchor)
+            from .config import _REGISTRY
+
+            specs = tuple(
+                s for s in _REGISTRY
+                if s.highlights_rows and s.applies_to(fund.entity_type)
+            )
+            class_level, _tables = highlights.extract_all(
+                fund, client, anchor, specs=specs
+            )
             candidates += class_level
         except Exception:
             log.exception("financial-highlights extraction failed for %s", fund.ticker)
@@ -111,7 +119,15 @@ def extract_fund(
             log.exception("XBRL extraction failed for %s", fund.ticker)
 
     try:
-        candidates += narrative.extract_all(fund, client, use_llm=use_llm, anchor=anchor)
+        from .config import _REGISTRY
+
+        prose_specs = tuple(
+            s for s in _REGISTRY
+            if s.prose_patterns and s.applies_to(fund.entity_type)
+        )
+        candidates += narrative.extract_all(
+            fund, client, use_llm=use_llm, anchor=anchor, specs=prose_specs
+        )
     except Exception:
         log.exception("narrative extraction failed for %s", fund.ticker)
 

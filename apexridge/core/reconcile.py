@@ -473,7 +473,7 @@ def reconcile_fund(
 
     out: dict[str, ResolvedMetric] = {}
     for metric in metrics:
-        if metric not in fund.supported_metrics:
+        if not fund.supports(metric):
             # Structural absence outranks every evidential one: the filer does
             # not publish this concept, so there is nothing to be stale or
             # low-confidence about. This is the KREF net-return case.

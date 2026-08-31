@@ -546,4 +546,4 @@ def extract_all(
             out.extend(fn(facts, fund, anchor, notices))
         except Exception:  # one bad metric must not sink the run
             log.exception("%s failed for %s", fn.__name__, fund.ticker)
-    return [c for c in out if c.metric in fund.supported_metrics]
+    return [c for c in out if fund.supports(c.metric)]

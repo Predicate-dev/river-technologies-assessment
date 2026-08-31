@@ -58,6 +58,11 @@ def main(argv: list[str] | None = None) -> int:
              "per the open compliance item, client sign-off.",
     )
     parser.add_argument(
+        "--metrics", metavar="JSON", default=None,
+        help="A JSON file of custom metric definitions, added to the built-in "
+             "set. See metrics/custom_metrics.json for the format.",
+    )
+    parser.add_argument(
         "--compare-to", metavar="COVERAGE_CSV", default=None,
         help="A previous run's coverage_breakdown.csv. Reports what populated "
              "then and blanks now -- the signal that a filer changed wording. "
@@ -72,6 +77,15 @@ def main(argv: list[str] | None = None) -> int:
         level=logging.INFO if args.verbose else logging.WARNING,
         format="%(levelname)s %(name)s: %(message)s",
     )
+
+    if args.metrics:
+        from . import config as _config
+        from .metrics import build_registry
+
+        registry = build_registry(args.metrics)
+        _config.use_registry(registry)
+        added = [s.key for s in registry.custom]
+        print(f"Custom metrics: {', '.join(added)}", file=sys.stderr)
 
     funds = FUNDS
     if args.funds:

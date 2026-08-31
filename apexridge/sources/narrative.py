@@ -533,6 +533,53 @@ def prose_patterns(doc: Doc) -> list[Candidate]:
     return out
 
 
+def registry_patterns(doc: Doc, specs: tuple) -> list[Candidate]:
+    """Extraction for registry-declared metrics that supply prose patterns.
+
+    The same anchored-window mechanism the built-in fee patterns use, driven by
+    the metric definition instead of by code. A custom metric therefore gets the
+    same provenance, the same excerpt, and the same treatment in reconciliation
+    -- and the same refusal to guess: a spec whose patterns match nothing yields
+    no candidate rather than a fallback.
+    """
+    out: list[Candidate] = []
+    for spec in specs:
+        if not spec.prose_patterns or not spec.applies_to(doc.fund.entity_type):
+            continue
+        anchor_phrases = spec.prose_anchors or (spec.label.lower(),)
+        found = False
+        for pos in anchors(doc.html, anchor_phrases, limit_per_phrase=PROSE_ANCHOR_LIMIT):
+            if found:
+                break
+            text = window_text(doc.html, pos)
+            for pat in spec.prose_patterns:
+                try:
+                    m = re.search(pat, text, re.I)
+                except re.error as exc:
+                    log.warning("metric %s: bad pattern %r (%s)", spec.key, pat, exc)
+                    break
+                if not m:
+                    continue
+                value = float(m.group(1))
+                lo, hi = spec.sane_range
+                flags = [] if lo <= value <= hi else ["out_of_sane_range"]
+                out.append(
+                    doc.candidate(
+                        spec.key,
+                        value,
+                        unit=spec.unit,
+                        tier=SourceTier.TEXT_PATTERN,
+                        locator=f"custom metric {spec.key!r} @ char {pos}",
+                        excerpt=text[max(0, m.start() - 110) : m.end() + 110],
+                        basis={"source": "declared_prose_pattern"},
+                        flags=flags,
+                    )
+                )
+                found = True
+                break
+    return out
+
+
 # ---------------------------------------------------------- superseded rates
 
 # "the base management fee rate was reduced from 1.375% to 1.0%" states the old
@@ -901,9 +948,15 @@ def extract_all(
     use_llm: bool = False,
     llm_client: Any = None,
     anchor: date | None = None,
+    specs: tuple = (),
 ) -> list[Candidate]:
     out: list[Candidate] = []
     for doc in load_docs(fund, client, anchor=anchor):
+        if specs:
+            try:
+                out.extend(registry_patterns(doc, specs))
+            except Exception:
+                log.exception("registry pattern extraction failed for %s", fund.ticker)
         for fn in (fee_tables, return_tables, prose_patterns, superseded_rates):
             try:
                 out.extend(fn(doc))
@@ -914,7 +967,7 @@ def extract_all(
             if missing:
                 out.extend(llm_extract(doc, missing, client=llm_client))
 
-    kept = [c for c in out if c.metric in fund.supported_metrics]
+    kept = [c for c in out if fund.supports(c.metric)]
     if anchor is not None:
         _apply_terms_clock(kept, fund, client, anchor)
     return kept

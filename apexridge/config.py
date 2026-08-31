@@ -10,6 +10,8 @@ explicitly and checked against EDGAR in tests.
 from __future__ import annotations
 
 import os
+
+from . import metrics as _metrics
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -52,6 +54,18 @@ class Fund:
     def cik_int(self) -> int:
         return int(self.cik)
 
+    def supports(self, metric: str) -> bool:
+        """Whether this filer is in scope for a metric.
+
+        Custom metrics declared in the registry are in scope for every filer
+        unless the definition restricts them, because the registry -- not the
+        hand-curated per-fund list -- is where a newly added metric is defined.
+        """
+        if metric in self.supported_metrics:
+            return True
+        spec = _REGISTRY.get(metric)
+        return bool(spec and spec.custom and spec.applies_to(self.entity_type))
+
     def cik_padded(self) -> str:
         return f"{self.cik_int:010d}"
 
@@ -67,17 +81,15 @@ M_NAV_PS = "nav_per_share_usd"
 M_LEVERAGE = "leverage_ratio_dte"
 M_DIST_YIELD = "distribution_yield_pct"
 
-ALL_METRICS = (
-    M_RETURN_1Y,
-    M_RETURN_3Y,
-    M_RETURN_5Y,
-    M_MGMT_FEE,
-    M_INCENTIVE_FEE,
-    M_HURDLE,
-    M_NAV_PS,
-    M_LEVERAGE,
-    M_DIST_YIELD,
-)
+# Metric metadata is owned by the declarative registry (apexridge/metrics.py) so
+# a metric the PMs add next quarter is a JSON entry rather than a code change.
+_REGISTRY = _metrics.DEFAULT
+# A list, not a tuple, and mutated in place by `use_registry`. Modules do
+# `from .config import ALL_METRICS`, which binds the object -- rebinding this
+# name would leave every one of them iterating the built-in nine while the
+# coverage report showed the custom set. That mismatch is exactly how a metric
+# appears in one document and not another.
+ALL_METRICS = list(_REGISTRY.keys)
 
 # Terms metrics state a contractual rate rather than measure a quantity. A rate
 # cannot change unobserved: it moves only by an amendment, and an amendment is
@@ -102,44 +114,34 @@ AMENDABLE_FORMS = {
 # this system exists to prevent. Flip to True when the client confirms.
 APEX_BASIS_CONFIRMED = False
 
-METRIC_LABELS = {
-    M_RETURN_1Y: "Net return, trailing 1Y (ann.)",
-    M_RETURN_3Y: "Net return, trailing 3Y (ann.)",
-    M_RETURN_5Y: "Net return, trailing 5Y (ann.)",
-    M_MGMT_FEE: "Management fee",
-    M_INCENTIVE_FEE: "Incentive fee",
-    M_HURDLE: "Incentive hurdle",
-    M_NAV_PS: "NAV per share",
-    M_LEVERAGE: "Leverage (D/E)",
-    M_DIST_YIELD: "Distribution yield (ann.)",
-}
+# These module-level views are read all over the pipeline. They are derived from
+# the registry, never edited by hand.
+METRIC_LABELS = _REGISTRY.labels()
+METRIC_UNITS = _REGISTRY.units()
+METRIC_SANE_RANGE = _REGISTRY.ranges()
+METRIC_DIRECTION = _REGISTRY.directions()
 
-# Units, used by the normalizer to catch the classic 100x error.
-METRIC_UNITS = {
-    M_RETURN_1Y: "pct",
-    M_RETURN_3Y: "pct",
-    M_RETURN_5Y: "pct",
-    M_MGMT_FEE: "pct",
-    M_INCENTIVE_FEE: "pct",
-    M_HURDLE: "pct",
-    M_NAV_PS: "usd",
-    M_LEVERAGE: "ratio",
-    M_DIST_YIELD: "pct",
-}
 
-# Plausible ranges. A value outside these is not silently dropped -- it is
-# flagged, which is how unit and scale errors surface instead of shipping.
-METRIC_SANE_RANGE = {
-    M_RETURN_1Y: (-50.0, 50.0),
-    M_RETURN_3Y: (-50.0, 50.0),
-    M_RETURN_5Y: (-50.0, 50.0),
-    M_MGMT_FEE: (0.0, 5.0),
-    M_INCENTIVE_FEE: (0.0, 30.0),
-    M_HURDLE: (0.0, 15.0),
-    M_NAV_PS: (0.5, 500.0),
-    M_LEVERAGE: (0.0, 5.0),
-    M_DIST_YIELD: (0.0, 30.0),
-}
+def use_registry(registry: "_metrics.MetricRegistry") -> None:
+    """Swap in a registry that includes custom metrics, at startup.
+
+    Mutates the module-level views in place rather than rebinding them, because
+    other modules import the dicts directly and a rebind would leave them
+    pointing at the old set -- a custom metric that silently appears in one
+    document and not another.
+    """
+    global _REGISTRY
+    _REGISTRY = registry
+    ALL_METRICS[:] = list(registry.keys)
+    for view, values in (
+        (METRIC_LABELS, registry.labels()),
+        (METRIC_UNITS, registry.units()),
+        (METRIC_SANE_RANGE, registry.ranges()),
+        (METRIC_DIRECTION, registry.directions()),
+    ):
+        view.clear()
+        view.update(values)
+
 
 _FUND_METRICS = ALL_METRICS
 # KREF is a mortgage REIT: it has no fund-style net return series and no N-2

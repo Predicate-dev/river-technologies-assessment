@@ -89,7 +89,10 @@ def _years_from(row: list[str]) -> list[int]:
     return years
 
 
-def _values_from(cells: list[str]) -> list[float]:
+_INTEGER_OR_DECIMAL = re.compile(r"\(?\d[\d,]*(?:\.\d+)?\)?")
+
+
+def _values_from(cells: list[str], allow_integers: bool = False) -> list[float]:
     """Ordered numeric values from a data row.
 
     Currency and percent symbols sit in their own cells, and a negative can be
@@ -102,7 +105,8 @@ def _values_from(cells: list[str]) -> list[float]:
     # "(0.90 )" and "(0.90" + ")" both become "(0.90)".
     text = re.sub(r"\(\s*([\d,]*\.?\d+)\s*\)", r"(\1)", text)
     out: list[float] = []
-    for token in _DECIMAL.findall(text):
+    pattern = _INTEGER_OR_DECIMAL if allow_integers else _DECIMAL
+    for token in pattern.findall(text):
         negative = token.startswith("(")
         try:
             v = float(token.strip("()").replace(",", ""))
@@ -134,6 +138,10 @@ class HighlightsTable:
     nav_end: list[float | None] = field(default_factory=list)
     total_return: list[float | None] = field(default_factory=list)
     dividends: list[float | None] = field(default_factory=list)
+    # metric key -> values by column, for registry-declared custom metrics that
+    # name a highlights row. Keeps custom metrics on the same extraction path as
+    # the built-in ones rather than giving them a weaker side channel.
+    custom_rows: dict[str, list[float]] = field(default_factory=dict)
 
     def by_year(self, series: list[float | None]) -> dict[int, float]:
         return {y: v for y, v in zip(self.years, series) if v is not None}
@@ -170,7 +178,10 @@ def _class_from_preamble(text: str) -> str:
 
 
 def parse_table(
-    rows: list[list[str]], filing: Filing, preamble: str = ""
+    rows: list[list[str]],
+    filing: Filing,
+    preamble: str = "",
+    specs: "tuple" = (),
 ) -> HighlightsTable | None:
     """One financial-highlights table into a typed record.
 
@@ -207,13 +218,25 @@ def parse_table(
             table.total_return = values[: len(header_years)]
         elif re.match(ROW_DIVIDENDS, label) and not table.dividends:
             table.dividends = [abs(v) for v in values[: len(header_years)]]
+        else:
+            for spec in specs:
+                if spec.key in table.custom_rows or not spec.highlights_rows:
+                    continue
+                if any(re.search(pat, label, re.I) for pat in spec.highlights_rows):
+                    vals = _values_from(row[1:], allow_integers=True)
+                    table.custom_rows[spec.key] = vals[: len(header_years)]
+                    break
     if not (table.nav_end or table.total_return):
         return None
     return table
 
 
 def load_tables(
-    fund: Fund, client: EdgarClient, anchor: date, per_form: int = 1
+    fund: Fund,
+    client: EdgarClient,
+    anchor: date,
+    per_form: int = 1,
+    specs: "tuple" = (),
 ) -> list[HighlightsTable]:
     """Every share class's highlights block from the reports in force at `anchor`."""
     tables: list[HighlightsTable] = []
@@ -240,7 +263,7 @@ def load_tables(
                     html[max(0, start - 4000) : start], "html.parser"
                 ).get_text(" ", strip=True)
                 parsed = parse_table(
-                    _rows(html, start, end + 8), filing, preamble[-600:]
+                    _rows(html, start, end + 8), filing, preamble[-600:], specs
                 )
                 if parsed:
                     tables.append(parsed)
@@ -279,12 +302,17 @@ def _prov(fund: Fund, t: HighlightsTable, locator: str, excerpt: str) -> Provena
 
 
 def extract_all(
-    fund: Fund, client: EdgarClient, anchor: date
+    fund: Fund, client: EdgarClient, anchor: date, specs: tuple = ()
 ) -> tuple[list[Candidate], list[HighlightsTable]]:
-    """Class-level candidates, plus the parsed tables for the NAV trend."""
+    """Class-level candidates, plus the parsed tables for the NAV trend.
+
+    `specs` are registry metrics that name a financial-highlights row. They flow
+    through the same class selection, provenance and reconciliation as the
+    built-in metrics -- a custom metric is not a second-class citizen.
+    """
     if not fund.institutional_class:
         return [], []
-    tables = load_tables(fund, client, anchor)
+    tables = load_tables(fund, client, anchor, specs=specs)
     if not tables:
         return [], []
     # Freshest first, so a point-in-time figure comes from the most recent
@@ -384,4 +412,33 @@ def extract_all(
                 ],
             )
         )
-    return [c for c in out if c.metric in fund.supported_metrics], tables
+    # Registry-declared metrics found in the highlights table, on the same
+    # class and with the same provenance discipline as the built-ins.
+    source = annual or chosen
+    for spec in specs:
+        values = source.custom_rows.get(spec.key) if source else None
+        if not values:
+            continue
+        value = values[0]  # newest column
+        lo, hi = spec.sane_range
+        flags = [] if lo <= value <= hi else ["out_of_sane_range"]
+        out.append(
+            Candidate(
+                fund_ticker=fund.ticker,
+                metric=spec.key,
+                value=value,
+                unit=spec.unit,
+                tier=SourceTier.HTML_TABLE,
+                provenance=_prov(
+                    fund, source,
+                    f"financial highlights, {source.share_class}, "
+                    f"row matching {spec.highlights_rows[0]!r}, most recent column",
+                    f"{spec.label} = {value} ({source.filing.form} "
+                    f"period {source.filing.report_date})",
+                ),
+                basis={"share_class": fund.institutional_class},
+                flags=flags,
+            )
+        )
+
+    return [c for c in out if fund.supports(c.metric)], tables

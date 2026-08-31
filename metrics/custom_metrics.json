@@ -1,0 +1,57 @@
+[
+  {
+    "key": "portfolio_turnover_pct",
+    "label": "Portfolio turnover",
+    "unit": "pct",
+    "direction": 0,
+    "sane_range": [
+      0.0,
+      500.0
+    ],
+    "highlights_rows": [
+      "portfolio turnover"
+    ],
+    "entity_types": [
+      "interval_fund"
+    ],
+    "note": "Reported in the financial-highlights table of N-CSR/N-CSRS. No direction: high turnover is a strategy choice, not a quality."
+  },
+  {
+    "key": "non_accrual_rate_pct",
+    "label": "Non-accrual rate (% of portfolio)",
+    "unit": "pct",
+    "direction": -1,
+    "sane_range": [
+      0.0,
+      40.0
+    ],
+    "prose_anchors": [
+      "non-accrual",
+      "nonaccrual"
+    ],
+    "prose_patterns": [
+      "non-?accrual investments as a percentage of total investments at cost and fair value were\\s*[0-9.]+\\s*%\\s*and\\s*([0-9]{1,2}(?:\\.[0-9]{1,2})?)\\s*%",
+      "non-?accrual[^.]{0,100}?at fair value[^.]{0,60}?([0-9]{1,2}(?:\\.[0-9]{1,2})?)\\s*%"
+    ],
+    "note": "Proxy for default rate, on a FAIR VALUE basis. Filers commonly state cost and fair value in the same sentence -- 'were 0.6% and 0.3%, respectively' -- and the two are not interchangeable. Disclosed in 10-K narrative, not tagged."
+  },
+  {
+    "key": "weighted_avg_spread_bps",
+    "label": "Weighted average spread (bps)",
+    "unit": "count",
+    "direction": 1,
+    "sane_range": [
+      0.0,
+      2000.0
+    ],
+    "prose_anchors": [
+      "weighted average spread",
+      "weighted average yield"
+    ],
+    "prose_patterns": [
+      "weighted average spread[^.]{0,80}?([0-9]{3,4})\\s*basis points",
+      "weighted average spread[^.]{0,80}?(?:of|was|is)\\s*([0-9]{1,2}\\.[0-9]{1,2})\\s*%"
+    ],
+    "note": "Stated inconsistently across filers -- some quote spread over benchmark, some all-in yield. Expect low coverage and check the excerpt before using."
+  }
+]

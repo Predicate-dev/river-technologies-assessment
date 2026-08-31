@@ -496,4 +496,4 @@ def extract_all(
     if not reports:
         return []
     out = leverage(fund, reports) + trailing_returns(fund, reports, notices)
-    return [c for c in out if c.metric in fund.supported_metrics]
+    return [c for c in out if fund.supports(c.metric)]
