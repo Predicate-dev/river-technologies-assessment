@@ -334,7 +334,11 @@ PROSE_RULES: list[tuple[str, tuple[str, ...], list[str], dict[str, Any]]] = [
         [
             r"annualized hurdle rate of\s*" + _PCT,
             r"hurdle rate[^.]{0,100}?equal to\s*" + _PCT + r"[^.]{0,40}?per\s*annum",
-            r"hurdle rate[^.]{0,80}?of\s*" + _PCT,
+            # NOT followed by a catch-up: "falls between the 1.500% hurdle
+            # rate and the catch up of 1.765%" would otherwise report the
+            # catch-up as the hurdle. They are adjacent by construction, so the
+            # loose pattern picks the wrong one about as often as the right one.
+            r"hurdle rate(?![^.]{0,80}?catch)[^.]{0,80}?of\s*" + _PCT,
             # REIT form: the hurdle is stated before it is named.
             _PCT + r"\s*of the trailing 12-month weighted average adjusted equity",
         ],
@@ -354,6 +358,13 @@ PROSE_RULES: list[tuple[str, tuple[str, ...], list[str], dict[str, Any]]] = [
             + r"\s*(?:of|on)\s+(?:the\s+)?(?:fund's\s+)?(?:pre-incentive|net|"
             r"ordinary|investment|realized|capital|income|profits)",
             r"carried interest[^.]{0,80}?of\s*" + _PCT + r"\s*(?:of|on)\s",
+            # Some prospectuses state the rate only inside the worked fee
+            # examples: "there is a 15% incentive fee on pre-incentive fee net
+            # investment income above the 1.765% catch up". It is a direct
+            # statement of the rate and it repeats across scenarios, but it is
+            # an illustration rather than the fee schedule, so it is flagged.
+            r"there is an? " + _PCT + r" incentive fee on pre-incentive fee",
+            r"represents " + _PCT + r" of pre-incentive fee net investment income",
         ],
         {"fee_basis": "stated_rate"},
     ),
@@ -408,7 +419,12 @@ def _hurdle_basis(
 # A 10-K mentions "incentive fee" fifty times; the first dozen hits are the
 # table of contents and risk factors, and the agreement itself sits past them.
 # Scanning too few anchors silently loses the metric.
-PROSE_ANCHOR_LIMIT = 40
+# A prospectus mentions "incentive fee" well over a hundred times, and the rate
+# can appear only in the worked examples near the back (TAKIX states its 15%
+# nowhere else). Scanning too few anchors loses the metric entirely; the cost of
+# scanning more is time, and the patterns are specific enough that depth does
+# not buy false positives.
+PROSE_ANCHOR_LIMIT = 150
 
 # Filings restate their own history in the present document. TAKIX's prospectus
 # says "Prior to April 1, 2020, the Management Fee was ... at the annual rate of
@@ -485,6 +501,10 @@ def prose_patterns(doc: Doc) -> list[Candidate]:
                 historical = _is_historical(text, m.start())
                 if historical:
                     flags.append("superseded_rate")
+                if metric == M_INCENTIVE_FEE and re.search(
+                    r"(scenario|assuming|illustrat|example)", text[:1400], re.I
+                ):
+                    flags.append("rate_from_worked_example")
                 if metric == M_INCENTIVE_FEE and not 5.0 <= value <= 25.0:
                     # Outside the range every externally-managed credit fund
                     # actually charges. Almost always a pattern that latched

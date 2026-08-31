@@ -332,3 +332,47 @@ def test_disqualifying_flag_on_only_one_of_two_same_basis_candidates_does_not_bl
     r = reconcile_metric(LEVERAGE_FUND, "leverage_ratio_dte", cands, REF)
     assert r.value == 1.231  # fewest-flags ordering picks the clean one
     assert r.suppression is None
+
+
+def test_no_incentive_fee_makes_the_hurdle_not_applicable():
+    """A fund charging no carry has no hurdle. Reporting it as an extraction
+    gap would imply a figure exists that we failed to find; it does not."""
+    from apexridge.config import M_HURDLE, M_INCENTIVE_FEE, Fund
+    from apexridge.core.reconcile import reconcile_fund
+
+    fund = Fund(
+        name="No-Carry Interval Fund",
+        ticker="NOCRY",
+        cik="9999999",
+        entity_type="interval_fund",
+        fiscal_year_end="12-31",
+        primary_forms=("N-CSR",),
+        supported_metrics=(M_INCENTIVE_FEE, M_HURDLE),
+    )
+    zero = Candidate(
+        fund_ticker=fund.ticker,
+        metric=M_INCENTIVE_FEE,
+        value=0.0,
+        unit="pct",
+        tier=SourceTier.HTML_TABLE,
+        provenance=Provenance(
+            fund_ticker=fund.ticker,
+            form_type="486BPOS",
+            accession="0001-25-000001",
+            # Inside the staleness window: this test is about the cross-metric
+            # rule, and a period one day past the limit would suppress the
+            # incentive fee first and never exercise it.
+            filing_date=date(2025, 9, 30),
+            period_end=date(2025, 9, 30),
+            document_url="https://example.invalid",
+            locator="expense table: no incentive fee row",
+        ),
+        basis={"fee_basis": "none_disclosed"},
+    )
+    resolved = reconcile_fund(fund, [zero], date(2025, 12, 31))
+
+    assert resolved[M_INCENTIVE_FEE].value == 0.0
+    hurdle = resolved[M_HURDLE]
+    assert hurdle.value is None
+    assert hurdle.suppression.reason is SuppressionReason.NOT_APPLICABLE
+    assert "no incentive fee" in hurdle.suppression.detail

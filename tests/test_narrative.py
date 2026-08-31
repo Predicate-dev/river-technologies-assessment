@@ -156,6 +156,42 @@ def test_reit_fee_annualization_detector_spans_the_decimal_point():
     )
 
 
+# --------------------------------------------------- catch-up vs hurdle
+
+
+def test_catch_up_rate_is_not_read_as_the_hurdle():
+    """"between the 1.500% hurdle rate and the catch up of 1.765%" -- the two
+    sit adjacent by construction, so a loose pattern picks the wrong one about
+    as often as the right one."""
+    text = (
+        "Pre-incentive fee net investment income falls between the 1.500% "
+        "hurdle rate and the catch up of 1.765%; therefore the incentive fee"
+    )
+    m = _first_match(M_HURDLE, text)
+    assert m is None or m.group(1) != "1.765"
+
+
+def test_a_real_hurdle_still_matches():
+    text = "subject to a hurdle rate of 2.0% quarterly, which is the same"
+    m = _first_match(M_HURDLE, text)
+    assert m is not None and m.group(1) == "2.0"
+
+
+# ------------------------------------------- rate stated in a worked example
+
+
+def test_incentive_rate_read_from_a_worked_example():
+    """TAKIX states its 15% nowhere but the fee illustrations."""
+    text = (
+        "the catch up provision is fully satisfied by the 0.265% of "
+        "pre-incentive fee net investment income above the 1.500% hurdle rate "
+        "and there is a 15% incentive fee on pre-incentive fee net investment "
+        "income above the 1.765% catch up."
+    )
+    m = _first_match(M_INCENTIVE_FEE, text)
+    assert m is not None and m.group(1) == "15"
+
+
 # ----------------------------------------------------- quote verification
 
 

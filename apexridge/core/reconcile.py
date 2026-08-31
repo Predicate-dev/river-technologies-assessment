@@ -22,6 +22,7 @@ from typing import Any, Iterable
 
 from ..config import (
     ALL_METRICS,
+    M_HURDLE,
     M_INCENTIVE_FEE,
     M_MGMT_FEE,
     METRIC_SANE_RANGE,
@@ -477,4 +478,39 @@ def reconcile_fund(
         out[metric] = reconcile_metric(
             fund, metric, grouped.get(metric, []), reference_date, notices
         )
+
+    # Cross-metric consistency: a fund that charges no incentive fee cannot have
+    # an incentive hurdle. Reporting the hurdle as an extraction gap would imply
+    # a figure exists that we failed to find. It does not exist, and that is
+    # exactly the distinction the output is meant to preserve.
+    incentive = out.get(M_INCENTIVE_FEE)
+    hurdle = out.get(M_HURDLE)
+    if (
+        incentive is not None
+        and incentive.value == 0.0
+        and hurdle is not None
+        and hurdle.value is None
+    ):
+        out[M_HURDLE] = _suppress(
+            ResolvedMetric(
+                fund_ticker=fund.ticker,
+                metric=M_HURDLE,
+                value=None,
+                unit=METRIC_UNITS.get(M_HURDLE, "pct"),
+                confidence=Confidence.SUPPRESSED,
+                score=0.0,
+                chosen=None,
+            ),
+            Suppression(
+                fund_ticker=fund.ticker,
+                metric=M_HURDLE,
+                reason=SuppressionReason.NOT_APPLICABLE,
+                detail="the fund charges no incentive fee, so no hurdle applies",
+                internal_note=(
+                    "derived from the incentive fee resolving to none charged; "
+                    "not an extraction gap"
+                ),
+            ),
+        )
+
     return out

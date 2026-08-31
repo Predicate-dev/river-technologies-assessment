@@ -1,7 +1,7 @@
 # Technical approach — competitor benchmarking pipeline
 
 **Audience:** Apex Ridge technical counterpart
-**Status:** prototype against live SEC EDGAR · 59 tests · 25 of 36 competitor cells populate at the Q4 2025 anchor
+**Status:** prototype against live SEC EDGAR · 63 tests · 27 of 36 competitor cells populate at the Q4 2025 anchor
 
 ---
 
@@ -38,9 +38,9 @@ have eleven usable `cef:` tags between them, so their fee terms exist only in
 prose and their class-level figures only in the annual and semi-annual reports.
 
 `core/periods.py` rebuilds a non-overlapping distribution ledger by differencing
-fiscal-year-to-date cumulatives. `core/temporal.py` owns the reporting anchor,
-eligibility and staleness. `core/reconcile.py` is the only path that can blank a
-value. `core/confidence.py` scores.
+fiscal-year-to-date cumulatives; `core/temporal.py` owns the anchor, eligibility
+and staleness; `core/reconcile.py` is the only path that can blank a value;
+`core/confidence.py` scores.
 
 ## 2. Key decisions
 
@@ -89,12 +89,11 @@ score = tier × agreement × freshness × ∏(named penalties)
 Every input is recorded on the value, so a reviewer audits the score rather than
 trusting it. **Nothing asks a model how confident it is.**
 
-Reconciliations that actually run: cross-mechanism (GBDC NAV — XBRL 14.84 vs
+Reconciliations that run: cross-mechanism (GBDC NAV — XBRL 14.84 vs
 equity÷shares, agreeing to 0.02%); cross-document (CCLFX's fee in both the
 expense table and prose); internal consistency (liabilities÷equity vs
 (assets−equity)÷equity); and bound-checking (TAKIX's seven unlabelled class
-series bound any narrative figure, retained internally, never rendered as a
-range).
+series bound any narrative figure — retained internally, never rendered).
 
 **Resolution is by weight of evidence, not tier.** Same-basis candidates cluster
 by agreement; the cluster with most *independent* extractions wins, then fewest
@@ -124,17 +123,31 @@ by 265bp until reconstructed.
 **KREF's management fee is quoted quarterly** on adjusted equity — 0.375%, which
 is 1.50% a year against peers quoting ~1.0%. Annualized and basis-marked.
 
+**CCLFX charges no incentive fee**, established from the absence of an incentive
+row in a complete fee table rather than from anyone's recollection. Its hurdle is
+therefore reported as inapplicable, not as a gap — a fund with no carry has no
+hurdle, and calling that an extraction failure would imply a figure exists.
+
+**TAKIX states its incentive rate only inside the worked fee examples** ("there
+is a 15% incentive fee on pre-incentive fee net investment income"), and its
+catch-up rate sits adjacent to its hurdle in the same sentence. Both are
+extracted and distinguished; reading the catch-up as the hurdle was a live
+failure until it was.
+
 **TAKIX reports zero borrowings against $2.2bn of liabilities.** Computable,
 withheld: falling through to the total-liabilities basis would silently answer
 the regulatory-vs-economic question now with your CIO.
 
 ## 5. Limitations
 
-- **25 of 36 cells populate**, classified in `output/coverage_breakdown.md` by
-  who owns each gap: 3 ours, 3 cadence-limited, 1 client-blocked, 4 structural.
-- **"Ours" assumes an EDGAR source exists.** Analysts also source from fund
-  websites and IR pages; those cells cannot be closed within scope. Treat the
-  backlog as *not yet ruled out*, and read no projected coverage number off it.
+- **27 of 36 cells populate**, classified in `output/coverage_breakdown.md` by
+  who owns each gap. **Nothing remains that further extraction would close**:
+  3 are cadence-limited, 1 is blocked on your leverage definition, 5 are
+  structural. Every metric reachable from EDGAR for these filers is extracted.
+- **That is contingent on EDGAR being the whole scope.** Analysts also source
+  from fund websites and IR pages. If cells in the manual pack came from there,
+  they are outside this system's reach by design, not by omission — and the
+  recommended treatment if they come into scope is in §6.
 - **CCLFX's cadence gap is live.** Its March year-end puts the annual report 275
   days behind a Q4 2025 anchor, past the six-month line, so three cells blank on
   your rule rather than any failure of ours. Recurs annually.

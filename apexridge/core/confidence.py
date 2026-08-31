@@ -71,6 +71,9 @@ FLAG_PENALTIES: dict[str, float] = {
     # Reporting "none charged" from the absence of a row. Sound where the table
     # is demonstrably complete, but weaker than reading a stated figure.
     "inferred_from_absence": 0.80,
+    # The rate is stated directly, but inside a worked example rather than the
+    # fee schedule. Sound, and weaker than a schedule statement.
+    "rate_from_worked_example": 0.88,
     "implausible_incentive_fee_rate": 0.35,
     "fee_denominator_unstated": 0.92,
 }

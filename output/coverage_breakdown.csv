@@ -1,4 +1,22 @@
 fund,metric,status,owner,detail,confidence
+CCLFX,net_return_1y_pct,FILLED,-,8.912 pct,Low
+CCLFX,net_return_3y_pct,stale_beyond_limit,CADENCE,figure exists but predates the six-month line,
+CCLFX,net_return_5y_pct,stale_beyond_limit,CADENCE,figure exists but predates the six-month line,
+CCLFX,management_fee_pct,FILLED,-,1 pct,Medium
+CCLFX,incentive_fee_pct,FILLED,-,0 pct,Low
+CCLFX,incentive_hurdle_pct,not_applicable,STRUCTURAL,filer does not publish this concept; no extraction would fix it,
+CCLFX,nav_per_share_usd,FILLED,-,10.77 usd,Low
+CCLFX,leverage_ratio_dte,FILLED,-,0.3186 ratio,Medium
+CCLFX,distribution_yield_pct,stale_beyond_limit,CADENCE,figure exists but predates the six-month line,
+TAKIX,net_return_1y_pct,FILLED,-,6.27 pct,Medium
+TAKIX,net_return_3y_pct,FILLED,-,10.36 pct,Medium
+TAKIX,net_return_5y_pct,FILLED,-,8.213 pct,Medium
+TAKIX,management_fee_pct,FILLED,-,1 pct,Low
+TAKIX,incentive_fee_pct,FILLED,-,15 pct,Low
+TAKIX,incentive_hurdle_pct,FILLED,-,6 pct,Low
+TAKIX,nav_per_share_usd,FILLED,-,8.32 usd,Low
+TAKIX,leverage_ratio_dte,basis_disqualified,CLIENT,"computable, withheld pending a definition the client is deciding",
+TAKIX,distribution_yield_pct,FILLED,-,9.014 pct,Medium
 GBDC,net_return_1y_pct,FILLED,-,8.723 pct,Low
 GBDC,net_return_3y_pct,FILLED,-,11.88 pct,Low
 GBDC,net_return_5y_pct,window_mismatch,STRUCTURAL,filer's tagged history does not span the labelled window,
@@ -8,3 +26,12 @@ GBDC,incentive_hurdle_pct,FILLED,-,8 pct,Low
 GBDC,nav_per_share_usd,FILLED,-,14.84 usd,High
 GBDC,leverage_ratio_dte,FILLED,-,1.254 ratio,Medium
 GBDC,distribution_yield_pct,FILLED,-,10.43 pct,Medium
+KREF,net_return_1y_pct,not_applicable,STRUCTURAL,filer does not publish this concept; no extraction would fix it,
+KREF,net_return_3y_pct,not_applicable,STRUCTURAL,filer does not publish this concept; no extraction would fix it,
+KREF,net_return_5y_pct,not_applicable,STRUCTURAL,filer does not publish this concept; no extraction would fix it,
+KREF,management_fee_pct,FILLED,-,1.5 pct,Low
+KREF,incentive_fee_pct,FILLED,-,20 pct,Low
+KREF,incentive_hurdle_pct,FILLED,-,7 pct,Low
+KREF,nav_per_share_usd,FILLED,-,18.22 usd,Low
+KREF,leverage_ratio_dte,FILLED,-,2.449 ratio,Medium
+KREF,distribution_yield_pct,FILLED,-,5.449 pct,Medium
