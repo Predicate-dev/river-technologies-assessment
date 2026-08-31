@@ -63,6 +63,9 @@ FLAG_PENALTIES: dict[str, float] = {
     "_distribution_periods_derived": 0.95,  # suffix-style flag from returns
     "llm_low_agreement": 0.65,
     "single_extraction_pass": 0.90,
+    "superseded_rate_present_in_source": 0.85,
+    "implausible_incentive_fee_rate": 0.35,
+    "fee_denominator_unstated": 0.92,
 }
 UNKNOWN_FLAG_PENALTY = 0.90
 
@@ -70,6 +73,14 @@ FRESHNESS_BANDS = ((100, 1.00), (200, 0.95), (400, 0.85))
 FRESHNESS_STALE = 0.70
 
 SUPPRESS_BELOW = 0.40
+
+# Hard staleness limit, set by the client, not by us: a figure whose period end
+# is older than six months is blanked outright regardless of how good the
+# evidence behind it is. This is a separate mechanism from the freshness factor
+# above -- that one degrades a score continuously, this one is a cliff. Both
+# exist because they answer different questions: "how much do we trust this?"
+# and "is the client willing to put it in front of a board?".
+STALE_LIMIT_DAYS = 183
 
 
 def tolerance_for(unit: str, value: float) -> float:

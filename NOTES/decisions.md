@@ -152,3 +152,149 @@
   Observed: CCLFX N-CSRS 66-70d (n=7), N-CSR 68-84d (n=7); TAKIX N-CSRS 52-68d
   (n=9), N-CSR 58-66d (n=8). So CCLFX's next institutional figure (period
   2026-09-30) is projected to land early-to-late Dec 2026, from its own history.
+
+## Window 1 continued — partner rulings, and the CIO boundary
+
+- **Escalation boundary is now explicit: the partner owns the workflow, the CIO
+  owns definitions and the peer list.** Partner will flag and route, not rule,
+  on anything definitional. Practical consequence for the build: any question
+  whose answer is a *metric definition* is a CIO item on a ~1-week cadence
+  (single batched conversation, end of week), so the pipeline must be
+  structured so definitional answers are render-time switches, not rebuilds.
+  This is the second time the `basis` field has paid for itself.
+- **Not-a-point-estimate is a label, never a rendered value (partner ruling,
+  general).** Asked about TAKIX's unattributable class returns; answered as a
+  rule. The 1Y corroboration band (3.19%-4.07%) is *not* rendered in-cell.
+  Cell is suppressed and carries "could not attribute to institutional class".
+  Partner's reason: a band generates a question he cannot answer cleanly,
+  whereas the attribution failure is itself information the PM needs to see.
+  Band is retained internally as a bound-check on any narrative-sourced figure
+  and surfaced in the appendix, not on the slide. Rejected in-cell range.
+- **KREF distribution yield: both bases in-cell, run-rate primary, TTM
+  alongside (partner).** Not a footnote. Reason given: a 0.25 -> 0.10 cut is
+  material enough that the context belongs at the cell. Confirms the earlier
+  "render at the cell, not in a footnote" rule and extends it from basis
+  divergence to basis *multiplicity*.
+- **GBDC 5Y: blank, with the reason AND the actual coverage period stated
+  (partner).** Explicitly must not be labelled 5Y when it is 4.75 years.
+  Strengthens the existing day-count rule: a suppressed cell renders the
+  reason and the window it *could* have covered, not just an as-of date.
+- **CCLFX class-level staleness: blank + explanatory label is the build
+  target; fund-level as a named fallback is a CIO decision.** Partner's ruling
+  stands on its own (blank), so the deterministic path is unblocked. If the CIO
+  approves a named fund-level fallback it is an additive labelled path, not a
+  change to the blank logic. NOT BLOCKING.
+- **TAKIX leverage basis (regulatory vs economic) is escalated and will not be
+  guessed.** Partner: the CIO gestured at the distinction without defining it,
+  and this is the exact metric class behind the board incident. Build proceeds
+  by emitting *all* constructions as candidates (borrowings/equity, total
+  liabilities/equity, (assets-equity)/equity) with the
+  zero_borrowings_but_material_total_liabilities flag intact, and leaving
+  selection to a single render-time policy constant. NOT BLOCKING; one line
+  changes when the definition arrives.
+- **Peer list is CIO-owned; the partner flags, he adds/removes.** Confirms the
+  earlier decision to proceed on KREF without a ruling and to document the
+  absent selection criteria as a risk rather than encode an assumed intent.
+- **Temporal anchor is the reporting quarter (2025-12-31), not the run date.**
+  Staleness measured against the anchor; a candidate is eligible when
+  period_end <= anchor, irrespective of filing date. Rejected anchoring on
+  today: it would blank Apex's own column under Apex's own rule while peers
+  populated from mid-2026 N-PORT data, making the competitors look fresher
+  than the client.
+- **The Apex column gets the same basis discipline as the peers, because its
+  basis is unknown.** Partner cannot confirm the share class or whether the
+  stated net return is net of both fees or management only. Renders with basis
+  UNCONFIRMED. Values still display — they are the client's own reported
+  figures — but any *derived* comparison (peer-minus-Apex deltas, rankings) is
+  suppressed until confirmed: a delta between two numbers of unknown basis is
+  precisely the confidently-wrong number the engagement exists to prevent.
+  Rejected assuming institutional/fully-net on the partner's explicit
+  instruction.
+- **Scope-change cost is asymmetric, and that is by construction.** Of the five
+  open client items, four are config-level by design: Apex basis is a label on
+  an already-rendering UNCONFIRMED column; the CCLFX fund-level fallback is a
+  disabled flag; KREF's fate is an entry in the FUNDS registry; the LLM path is
+  specified-but-unbuilt, so approving it later is net-new work with zero
+  rework. Only the CIO's leverage definition implies real per-filer extraction
+  work. Stated to the partner so he can prioritise which answers to chase.
+- **Flex signalled on funds and metrics; NOT building for it.** Partner passed
+  on an unofficial signal that the four funds and eight metrics may grow. The
+  existing config-driven registry already makes an added fund or metric cheap
+  *within a filer type already handled*. Deliberately not building a plugin
+  system on a rumour — that is scaffolding nobody asked for, on an 8-hour
+  clock. Two genuine cliffs named for him instead: (1) a new *entity type*, or
+  any fund without an EDGAR presence, has no source adapter and no filings at
+  all; (2) any new metric that lives in narrative prose rather than structured
+  data is gated behind the same compliance answer that blocks the LLM path.
+  The scope-flex question and the compliance question are therefore the same
+  question, which he did not appear to realise.
+- **Client contact is Lara, Apex Ridge's benchmarking expert.** Every Window 1
+  answer above is hers. She knows the workflow cold — do not explain the domain
+  back to her; spend her time on definitional judgment only. She routes the
+  peer-list and leverage-definition questions to the CIO rather than ruling on
+  them herself.
+- **`temporal.py` vs `periods.py` are separate concerns, not a duplication.**
+  `periods.py` reconstructs non-overlapping distribution intervals;
+  `temporal.py` holds the reporting anchor, the staleness cliff and projected
+  filing windows. The six-month limit itself is imported from `confidence.py`
+  rather than redeclared — one source of truth for a client-set rule.
+
+## Suppression mechanism (build)
+
+- **A blank cell is a first-class value (`Suppression`), not a missing one.**
+  Carries reason code, board-safe prose, the as-of date of the last available
+  figure, and the actual coverage window. `ResolvedMetric.value is None` now
+  always implies a populated `suppression`; `_suppress()` is the only path that
+  blanks a value, so a bare blank cannot reach the deck by omission.
+- **Reasons were being thrown away in `log.info`.** GBDC's 5Y diagnosis and
+  TAKIX's class-attribution diagnosis existed only as log lines — the useful
+  sentence is known upstream, where the data runs out, but died there.
+  Extractors now write to a `SuppressionLog` that reconciliation reads.
+  Rejected returning `(candidates, notices)` tuples from every extractor
+  (churns every call site for one metric's benefit).
+- **Suppression precedence: not-applicable > extractor diagnosis > hard
+  staleness > confidence floor.** Ordered by what the reader can act on. A
+  structural absence is not a data problem; "the data stops here" tells the
+  partner what to do next, "confidence 0.31" does not.
+- **The client's six-month rule was never implemented; it is now, as a cliff
+  separate from the freshness factor.** Those answer different questions —
+  freshness asks how much we trust a number, `STALE_LIMIT_DAYS` asks whether
+  the client will put it in front of a board. A 521-day-old GBDC fee figure now
+  blanks despite clean XBRL evidence, carrying its as-of date.
+- **`internal_note` splits appendix evidence from cell prose.** Forced by the
+  partner's ruling that the TAKIX class spread must not render as a range: the
+  band is retained as a bound-check and for the appendix, and cannot leak into
+  `cell_label`. A suppressed-but-computed value is also stashed there so the
+  audit trail survives the blanking.
+- **Bug found and fixed in this build: `SuppressionLog.__len__` made an empty
+  log falsy**, so `if notices:` dropped every notice on exactly the runs that
+  had none yet — silent, and it would have shipped a generic "no candidate
+  value found" over every specific diagnosis. Guards are `is not None` and
+  `__bool__` is pinned True. Regression test added.
+- **Window-mismatch coverage reports the computable window, not the raw span.**
+  First cut printed GBDC 5Y as "8.7y available" next to a blank 5Y cell, because
+  NAV history reaches 2017 but is annual-only before 2021. A blank contradicting
+  its own label is the failure mode this system exists to remove; it now states
+  4.7y from the nearest usable anchor (2021-09-30).
+- **Narrative tier: tables > anchored regex > LLM, with quote verification.**
+  Fees and hurdles exist only in prose. LLM answers must return a verbatim
+  supporting quote that is then checked to be literally present in the source;
+  an unverifiable answer is discarded, not downgraded. Pipeline runs with no
+  API key -- the deterministic tiers cover every fee currently extracted.
+- **Superseded rates are the live hazard in a 10-K.** GBDC's states "reduced
+  from 1.375% to 1.0%" and "from 20.0% to 15.0%". Patterns resolve to the
+  CURRENT rate and flag superseded_rate_present_in_source. Reading the first
+  number is precisely the misread-basis-point failure that caused this
+  engagement.
+- **Hurdle period qualifiers resolved by nearest-context.** "equal to 1.50% per
+  quarter, or an annualized hurdle rate of 6.00%" contains both a quarterly and
+  an annual rate. Context is measured around the captured NUMBER, not the match
+  start; anchoring on the match start quadrupled an already-annual 6.00% to 24%.
+- **Resolution is by weight of evidence, not tier alone.** Same-basis candidates
+  are clustered by agreement; the cluster with the most *independent*
+  extractions wins, then fewest flags, then tier, then recency. A repeated match
+  of the same table through two anchors counts once, so a duplicate cannot vote
+  itself into the deck.
+- **"stated_as: quarterly" moved out of `basis` into `transforms`.** As a basis
+  key it split conflicting hurdle values into separate groups so they never got
+  reconciled against each other -- a silent way to ship a wrong number.

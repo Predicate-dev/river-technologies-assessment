@@ -24,7 +24,13 @@ from ..config import (
     M_RETURN_5Y,
     Fund,
 )
-from ..core.models import Candidate, SourceTier
+from ..core.models import (
+    Candidate,
+    SourceTier,
+    Suppression,
+    SuppressionLog,
+    SuppressionReason,
+)
 from ..core.periods import Period, build_ledger, sum_between
 from .xbrl import Fact, XbrlFacts
 
@@ -289,7 +295,9 @@ _WINDOW_TOLERANCE_DAYS = {1: 20, 3: 45, 5: 60}
 _MAX_INTERNAL_GAP_DAYS = 200
 
 
-def nav_total_returns(facts: XbrlFacts, fund: Fund) -> list[Candidate]:
+def nav_total_returns(
+    facts: XbrlFacts, fund: Fund, notices: SuppressionLog | None = None
+) -> list[Candidate]:
     """Trailing 1/3/5-year annualized NAV total return.
 
     Neither BDC publishes an annualized trailing net return in its filings --
@@ -307,6 +315,20 @@ def nav_total_returns(facts: XbrlFacts, fund: Fund) -> list[Candidate]:
     out: list[Candidate] = []
     navs = _nav_series(facts)
     if len(navs) < 3:
+        if notices is not None:
+            for metric in (M_RETURN_1Y, M_RETURN_3Y, M_RETURN_5Y):
+                notices.add(
+                    Suppression(
+                        fund_ticker=fund.ticker,
+                        metric=metric,
+                        reason=SuppressionReason.INSUFFICIENT_HISTORY,
+                        detail=(
+                            f"only {len(navs)} NAV observation(s) in the filer's "
+                            "tagged history; a chain-linked return needs at least 3"
+                        ),
+                        as_of=navs[-1].end if navs else None,
+                    )
+                )
         return out
     ledger = dps_ledger(facts)
     end_fact = navs[-1]
@@ -324,10 +346,38 @@ def nav_total_returns(facts: XbrlFacts, fund: Fund) -> list[Candidate]:
             continue
         drift = abs((anchor.end - target).days)  # type: ignore[operator]
         if drift > tol:
+            # History exists but does not span the labelled window. Reporting it
+            # as a {years}Y return would be the mislabelling the client's board
+            # incident was about, so the cell states the span it actually has.
             log.info(
                 "%s %s: no NAV anchor within %dd of %s (closest %s, off by %dd) -- suppressed",
                 fund.ticker, metric, tol, target, anchor.end, drift,
             )
+            if notices is not None:
+                notices.add(
+                    Suppression(
+                        fund_ticker=fund.ticker,
+                        metric=metric,
+                        reason=SuppressionReason.WINDOW_MISMATCH,
+                        detail=(
+                            f"NAV history does not span a full {years}Y window "
+                            f"(nearest anchor {anchor.end} is {drift}d from the "
+                            f"{target} start date, tolerance {tol}d)"
+                        ),
+                        as_of=end_date,
+                        # The nearest usable anchor, not the raw history span:
+                        # GBDC has NAVs back to 2017 but only annually before
+                        # 2021, so "8.7y available" next to a blank 5Y cell
+                        # would read as a contradiction. What we can honestly
+                        # state is the window a return was computable over.
+                        coverage_start=anchor.end,
+                        coverage_end=end_date,
+                        internal_note=(
+                            f"not annualized to {years}Y: would overstate the window "
+                            f"by {drift}d"
+                        ),
+                    )
+                )
             continue
 
         window = [n for n in navs if n.end and anchor.end <= n.end <= end_date]
@@ -436,11 +486,16 @@ def fee_percents(facts: XbrlFacts, fund: Fund) -> list[Candidate]:
     return out
 
 
-def extract_all(facts: XbrlFacts, fund: Fund) -> list[Candidate]:
+def extract_all(
+    facts: XbrlFacts, fund: Fund, notices: SuppressionLog | None = None
+) -> list[Candidate]:
     out: list[Candidate] = []
     for fn in (nav_per_share, leverage, distribution_yield, nav_total_returns, fee_percents):
         try:
-            out.extend(fn(facts, fund))
+            if fn is nav_total_returns:
+                out.extend(fn(facts, fund, notices))
+            else:
+                out.extend(fn(facts, fund))
         except Exception:  # one bad metric must not sink the run
             log.exception("%s failed for %s", fn.__name__, fund.ticker)
     return [c for c in out if c.metric in fund.supported_metrics]

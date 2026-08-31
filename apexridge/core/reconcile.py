@@ -29,8 +29,22 @@ from ..config import (
     M_NAV_PS,
     Fund,
 )
-from .confidence import SUPPRESS_BELOW, grade, score_candidate, values_agree
-from .models import Candidate, Conflict, Confidence, ResolvedMetric
+from .confidence import (
+    STALE_LIMIT_DAYS,
+    SUPPRESS_BELOW,
+    grade,
+    score_candidate,
+    values_agree,
+)
+from .models import (
+    Candidate,
+    Conflict,
+    Confidence,
+    ResolvedMetric,
+    Suppression,
+    SuppressionLog,
+    SuppressionReason,
+)
 
 log = logging.getLogger(__name__)
 
@@ -86,38 +100,77 @@ def _sanity_check(cand: Candidate) -> None:
             cand.flags.append(flag)
 
 
+def _cluster(group: list[Candidate]) -> list[list[Candidate]]:
+    """Group same-basis candidates into clusters of mutually-agreeing values."""
+    clusters: list[list[Candidate]] = []
+    for cand in sorted(group, key=lambda c: c.value):
+        for cl in clusters:
+            if values_agree(cl[0].value, cand.value, cand.unit):
+                cl.append(cand)
+                break
+        else:
+            clusters.append([cand])
+    return clusters
+
+
+def _independent_count(cluster: list[Candidate]) -> int:
+    """How many genuinely distinct observations a cluster represents.
+
+    The same table matched twice through two anchor phrases is one observation,
+    not two. Counting distinct (tier, accession, locator-shape) triples keeps a
+    repeated match from voting itself into the deck.
+    """
+    return len({(c.tier, c.provenance.accession, tuple(c.transforms)) for c in cluster})
+
+
 def _resolve_within_basis(
     metric: str, group: list[Candidate]
 ) -> tuple[Candidate, list[Candidate], Conflict | None]:
     """Pick one candidate from a same-basis group and log any conflict.
 
-    Resolution order: fewest flags, then highest source tier, then most recent
-    period. "Fewest flags" leads deliberately -- a clean derived value beats a
-    flagged XBRL fact, which is the GBDC management-fee case (a correctly-tagged
-    number from the wrong document).
+    Resolution is a weight of evidence, in this order:
+      1. **Corroboration.** The value the most independent extractions agree on.
+         Two filings and a table agreeing on 1.00% beats one regex finding
+         1.50% deep in an appendix.
+      2. **Fewest extraction flags.** A clean derived value beats a flagged
+         high-tier one -- this is the GBDC management-fee case, where a
+         correctly-tagged XBRL fact came from the wrong document.
+      3. **Highest source tier**, then **most recent period**.
     """
-    ranked = sorted(
-        group,
+    clusters = _cluster(group)
+    clusters.sort(
+        key=lambda cl: (
+            -_independent_count(cl),
+            min(len(c.flags) for c in cl),
+            -max(c.tier.base_score for c in cl),
+            -max((c.as_of.toordinal() if c.as_of else 0) for c in cl),
+        )
+    )
+    winner = clusters[0]
+    chosen = sorted(
+        winner,
         key=lambda c: (
             len(c.flags),
             -c.tier.base_score,
             -(c.as_of.toordinal() if c.as_of else 0),
         ),
-    )
-    chosen, others = ranked[0], ranked[1:]
+    )[0]
+    others = [c for c in group if c is not chosen]
 
-    disagreeing = [c for c in others if not values_agree(chosen.value, c.value, chosen.unit)]
+    losing = [c for cl in clusters[1:] for c in cl]
     conflict = None
-    if disagreeing:
-        values = [chosen.value] + [c.value for c in disagreeing]
+    if losing:
+        values = [chosen.value] + [c.value for c in losing]
         mid = sorted(values)[len(values) // 2] or 1.0
         spread = (max(values) - min(values)) / abs(mid) * 100.0
         rationale = (
-            f"kept the value with fewest extraction flags ({len(chosen.flags)}) "
-            f"and highest source tier ({chosen.tier.value}); "
-            f"rejected {len(disagreeing)} value(s) at "
-            + ", ".join(f"{c.value:.4g} [{c.tier.value}, flags={c.flags or 'none'}]"
-                        for c in disagreeing)
+            f"kept {chosen.value:.4g}: agreed on by {_independent_count(winner)} "
+            f"independent extraction(s) vs "
+            + ", ".join(
+                f"{cl[0].value:.4g} ({_independent_count(cl)})" for cl in clusters[1:]
+            )
+            + f"; chosen source {chosen.tier.value}"
+            + (f", flags {chosen.flags}" if chosen.flags else ", no flags")
         )
         conflict = Conflict(
             fund_ticker=chosen.fund_ticker,
@@ -135,23 +188,51 @@ def _resolve_within_basis(
     return chosen, others, conflict
 
 
+def _suppress(metric_obj: ResolvedMetric, notice: Suppression) -> ResolvedMetric:
+    """Blank a cell and attach its defence. The only path that nulls a value.
+
+    Keeping this the single entry point is what lets `ResolvedMetric.value is
+    None` guarantee `suppression is not None`, which the render layer relies on
+    to make a bare blank unrepresentable.
+    """
+    metric_obj.value = None
+    metric_obj.confidence = Confidence.SUPPRESSED
+    metric_obj.suppression = notice
+    metric_obj.notes.append(notice.cell_label)
+    return metric_obj
+
+
 def reconcile_metric(
     fund: Fund,
     metric: str,
     candidates: list[Candidate],
     reference_date: date,
+    notices: SuppressionLog | None = None,
 ) -> ResolvedMetric:
     unit = METRIC_UNITS.get(metric, "pct")
     if not candidates:
-        return ResolvedMetric(
-            fund_ticker=fund.ticker,
-            metric=metric,
-            value=None,
-            unit=unit,
-            confidence=Confidence.SUPPRESSED,
-            score=0.0,
-            chosen=None,
-            notes=["no candidate value found in any source"],
+        # Prefer the extractor's specific diagnosis ("4.7y of NAV history, 5Y
+        # window not covered") over the generic absence. This is the whole
+        # reason SuppressionLog exists: the useful sentence is known upstream,
+        # where the data ran out, not here.
+        notice = notices.get(fund.ticker, metric) if notices else None
+        return _suppress(
+            ResolvedMetric(
+                fund_ticker=fund.ticker,
+                metric=metric,
+                unit=unit,
+                value=None,
+                confidence=Confidence.SUPPRESSED,
+                score=0.0,
+                chosen=None,
+            ),
+            notice
+            or Suppression(
+                fund_ticker=fund.ticker,
+                metric=metric,
+                reason=SuppressionReason.NO_CANDIDATE,
+                detail="no candidate value found in any source",
+            ),
         )
 
     for c in candidates:
@@ -184,24 +265,12 @@ def reconcile_metric(
     if conflict:
         audit["conflict_spread_pct"] = round(conflict.spread_pct, 2)
 
-    confidence = grade(score)
-    value: float | None = chosen.value
-    if score < SUPPRESS_BELOW:
-        # Below the floor we publish the absence, not the number. A blank cell
-        # with a reason is defensible to a board; a bad number is not.
-        value = None
-        confidence = Confidence.SUPPRESSED
-        notes.append(
-            f"suppressed: confidence {score:.2f} below floor {SUPPRESS_BELOW:.2f} "
-            f"({'; '.join(f['flag'] for f in audit['penalties']) or 'insufficient evidence'})"
-        )
-
-    return ResolvedMetric(
+    resolved = ResolvedMetric(
         fund_ticker=fund.ticker,
         metric=metric,
-        value=value,
+        value=chosen.value,
         unit=unit,
-        confidence=confidence,
+        confidence=grade(score),
         score=score,
         chosen=chosen,
         alternatives=alternatives,
@@ -210,12 +279,59 @@ def reconcile_metric(
         notes=notes,
     )
 
+    # Staleness is checked before the confidence floor, and independently of it:
+    # a six-month-old figure is blanked however strong its evidence is. Checking
+    # it first also means the cell carries the more useful of the two reasons --
+    # "the data stops here" tells the reader what to do next, "confidence 0.31"
+    # does not.
+    age_days = (reference_date - chosen.as_of).days if chosen.as_of else None
+    if age_days is not None and age_days > STALE_LIMIT_DAYS:
+        return _suppress(
+            resolved,
+            Suppression(
+                fund_ticker=fund.ticker,
+                metric=metric,
+                reason=SuppressionReason.STALE_BEYOND_LIMIT,
+                detail=(
+                    f"most recent reported figure is {age_days}d old, beyond the "
+                    f"{STALE_LIMIT_DAYS}d limit"
+                ),
+                as_of=chosen.as_of,
+                internal_note=(
+                    f"suppressed value was {chosen.value:.4g} {unit} "
+                    f"({chosen.tier.value}, score {score:.2f})"
+                ),
+            ),
+        )
+
+    if score < SUPPRESS_BELOW:
+        # Below the floor we publish the absence, not the number. A blank cell
+        # with a reason is defensible to a board; a bad number is not.
+        reasons = "; ".join(f["flag"] for f in audit["penalties"]) or "insufficient evidence"
+        return _suppress(
+            resolved,
+            Suppression(
+                fund_ticker=fund.ticker,
+                metric=metric,
+                reason=SuppressionReason.BELOW_CONFIDENCE_FLOOR,
+                detail=(
+                    f"evidence below the reporting floor "
+                    f"({score:.2f} < {SUPPRESS_BELOW:.2f}): {reasons}"
+                ),
+                as_of=chosen.as_of,
+                internal_note=f"suppressed value was {chosen.value:.4g} {unit}",
+            ),
+        )
+
+    return resolved
+
 
 def reconcile_fund(
     fund: Fund,
     candidates: Iterable[Candidate],
     reference_date: date,
     metrics: Iterable[str] = ALL_METRICS,
+    notices: SuppressionLog | None = None,
 ) -> dict[str, ResolvedMetric]:
     grouped: dict[str, list[Candidate]] = defaultdict(list)
     for c in candidates:
@@ -224,19 +340,32 @@ def reconcile_fund(
     out: dict[str, ResolvedMetric] = {}
     for metric in metrics:
         if metric not in fund.supported_metrics:
-            out[metric] = ResolvedMetric(
-                fund_ticker=fund.ticker,
-                metric=metric,
-                value=None,
-                unit=METRIC_UNITS.get(metric, "pct"),
-                confidence=Confidence.SUPPRESSED,
-                score=0.0,
-                chosen=None,
-                notes=[
-                    f"not applicable to a {fund.entity_type.replace('_', ' ')}; "
-                    "excluded rather than reported on an incomparable basis"
-                ],
+            # Structural absence outranks every evidential one: the filer does
+            # not publish this concept, so there is nothing to be stale or
+            # low-confidence about. This is the KREF net-return case.
+            out[metric] = _suppress(
+                ResolvedMetric(
+                    fund_ticker=fund.ticker,
+                    metric=metric,
+                    value=None,
+                    unit=METRIC_UNITS.get(metric, "pct"),
+                    confidence=Confidence.SUPPRESSED,
+                    score=0.0,
+                    chosen=None,
+                ),
+                Suppression(
+                    fund_ticker=fund.ticker,
+                    metric=metric,
+                    reason=SuppressionReason.NOT_APPLICABLE,
+                    detail=(
+                        f"not reported by a {fund.entity_type.replace('_', ' ')}; "
+                        "left blank rather than substituted with a near-metric on "
+                        "an incomparable basis"
+                    ),
+                ),
             )
             continue
-        out[metric] = reconcile_metric(fund, metric, grouped.get(metric, []), reference_date)
+        out[metric] = reconcile_metric(
+            fund, metric, grouped.get(metric, []), reference_date, notices
+        )
     return out

@@ -21,7 +21,14 @@ from datetime import date, datetime, timedelta
 from typing import Any, Iterator
 
 from ..config import M_LEVERAGE, M_RETURN_1Y, M_RETURN_3Y, M_RETURN_5Y, Fund
-from ..core.models import Candidate, Provenance, SourceTier
+from ..core.models import (
+    Candidate,
+    Provenance,
+    SourceTier,
+    Suppression,
+    SuppressionLog,
+    SuppressionReason,
+)
 from ..edgar import EdgarClient, Filing
 
 log = logging.getLogger(__name__)
@@ -344,7 +351,9 @@ def class_return_bands(reports: list[NportReport]) -> dict[str, ClassBand]:
     return bands
 
 
-def trailing_returns(fund: Fund, reports: list[NportReport]) -> list[Candidate]:
+def trailing_returns(
+    fund: Fund, reports: list[NportReport], notices: SuppressionLog | None = None
+) -> list[Candidate]:
     """Trailing annualized net return chain-linked from N-PORT monthly returns.
 
     N-PORT monthly total returns are net of expenses, so this is a genuine net
@@ -360,13 +369,52 @@ def trailing_returns(fund: Fund, reports: list[NportReport]) -> list[Candidate]:
     """
     series = monthly_return_series(reports)
     if not series:
+        if notices is not None:
+            for metric in (M_RETURN_1Y, M_RETURN_3Y, M_RETURN_5Y):
+                notices.add(
+                    Suppression(
+                        fund_ticker=fund.ticker,
+                        metric=metric,
+                        reason=SuppressionReason.NO_CANDIDATE,
+                        detail="no monthly total-return rows in the filer's N-PORT reports",
+                        as_of=reports[-1].period_end if reports else None,
+                    )
+                )
         return []
     if len(series) > 1:
+        # Several unlabelled class rows. The spread across them is a real
+        # cross-check, but by client ruling it is never rendered: anything that
+        # is not a point estimate is a label, not a value. So the band goes to
+        # the appendix via `internal_note` and the cell says why it is blank.
         log.info(
             "%s: %d unlabelled share-class return series in N-PORT -- no point "
             "estimate emitted; using them as a corroboration band instead",
             fund.ticker, len(series),
         )
+        if notices is not None:
+            bands = class_return_bands(reports)
+            for metric in (M_RETURN_1Y, M_RETURN_3Y, M_RETURN_5Y):
+                band = bands.get(metric)
+                notices.add(
+                    Suppression(
+                        fund_ticker=fund.ticker,
+                        metric=metric,
+                        reason=SuppressionReason.CLASS_ATTRIBUTION_FAILED,
+                        detail=(
+                            f"{len(series)} share-class return series are reported "
+                            "without class identifiers; could not attribute a figure "
+                            "to the institutional class"
+                        ),
+                        as_of=reports[-1].period_end if reports else None,
+                        internal_note=(
+                            f"appendix only, not for the deck: class spread "
+                            f"{band.low:.2f}%-{band.high:.2f}% across {band.n_classes} "
+                            "series, retained as a bound-check on any narrative figure"
+                            if band
+                            else ""
+                        ),
+                    )
+                )
         return []
 
     months = sorted(next(iter(series.values())).items())
@@ -382,6 +430,21 @@ def trailing_returns(fund: Fund, reports: list[NportReport]) -> list[Candidate]:
                 "%s %s: %d of %d monthly returns available from N-PORT -- suppressed",
                 fund.ticker, metric, len(months), years * 12,
             )
+            if notices is not None:
+                notices.add(
+                    Suppression(
+                        fund_ticker=fund.ticker,
+                        metric=metric,
+                        reason=SuppressionReason.INSUFFICIENT_HISTORY,
+                        detail=(
+                            f"{len(months)} of the {years * 12} contiguous monthly "
+                            "returns needed for this window are available from N-PORT"
+                        ),
+                        as_of=months[-1][0],
+                        coverage_start=months[0][0],
+                        coverage_end=months[-1][0],
+                    )
+                )
             continue
         need = years * 12
         prov = _prov(
@@ -409,9 +472,14 @@ def trailing_returns(fund: Fund, reports: list[NportReport]) -> list[Candidate]:
     return out
 
 
-def extract_all(fund: Fund, client: EdgarClient, limit: int = 8) -> list[Candidate]:
+def extract_all(
+    fund: Fund,
+    client: EdgarClient,
+    limit: int = 8,
+    notices: SuppressionLog | None = None,
+) -> list[Candidate]:
     reports = load_reports(fund, client, limit=limit)
     if not reports:
         return []
-    out = leverage(fund, reports) + trailing_returns(fund, reports)
+    out = leverage(fund, reports) + trailing_returns(fund, reports, notices)
     return [c for c in out if c.metric in fund.supported_metrics]

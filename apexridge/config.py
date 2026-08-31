@@ -118,7 +118,10 @@ _FUND_METRICS = ALL_METRICS
 # KREF is a mortgage REIT: it has no fund-style net return series and no N-2
 # fee table. Pending client confirmation (NOTES/questions.md Q1) we restrict it
 # to the metrics that genuinely map across entity types.
-_REIT_METRICS = (M_MGMT_FEE, M_INCENTIVE_FEE, M_NAV_PS, M_LEVERAGE, M_DIST_YIELD)
+# KREF's external-manager agreement does carry an incentive hurdle (7.0% on
+# trailing 12-month adjusted equity), and that IS comparable to Apex Ridge's
+# 6.00% hurdle, so it stays in scope. Trailing fund-style net returns do not.
+_REIT_METRICS = (M_MGMT_FEE, M_INCENTIVE_FEE, M_HURDLE, M_NAV_PS, M_LEVERAGE, M_DIST_YIELD)
 
 FUNDS: tuple[Fund, ...] = (
     Fund(
