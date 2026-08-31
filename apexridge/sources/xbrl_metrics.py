@@ -32,6 +32,7 @@ from ..core.models import (
     SuppressionReason,
 )
 from ..core.periods import Period, build_ledger, sum_between
+from ..core.temporal import DEFAULT_ANCHOR
 from .xbrl import Fact, XbrlFacts
 
 log = logging.getLogger(__name__)
@@ -50,9 +51,12 @@ DPS_TAGS = (
 )
 
 
-def _first_available(facts: XbrlFacts, tags: tuple[str, ...], **kw: Any) -> tuple[str, Fact] | None:
+def _first_available(
+    facts: XbrlFacts, tags: tuple[str, ...], anchor: date, **kw: Any
+) -> tuple[str, Fact] | None:
+    """First tag in preference order that has an observation as of the anchor."""
     for t in tags:
-        f = facts.latest(t, **kw)
+        f = facts.as_of(t, anchor, **kw)
         if f is not None:
             return t, f
     return None
@@ -61,9 +65,14 @@ def _first_available(facts: XbrlFacts, tags: tuple[str, ...], **kw: Any) -> tupl
 # --------------------------------------------------------------------- NAV
 
 
-def nav_per_share(facts: XbrlFacts, fund: Fund) -> list[Candidate]:
+def nav_per_share(
+    facts: XbrlFacts,
+    fund: Fund,
+    anchor: date = DEFAULT_ANCHOR,
+    notices: SuppressionLog | None = None,
+) -> list[Candidate]:
     out: list[Candidate] = []
-    direct = facts.latest("us-gaap:NetAssetValuePerShare", instant=True)
+    direct = facts.as_of("us-gaap:NetAssetValuePerShare", anchor, instant=True)
     if direct:
         out.append(
             facts.candidate(
@@ -78,8 +87,8 @@ def nav_per_share(facts: XbrlFacts, fund: Fund) -> list[Candidate]:
     # should reproduce reported NAV/share almost exactly, which makes it a
     # genuine cross-check. For a REIT there is no "NAV" -- this is book value
     # per share and is labelled as such.
-    eq = _first_available(facts, EQUITY_TAGS, instant=True)
-    sh = facts.latest("us-gaap:CommonStockSharesOutstanding", instant=True)
+    eq = _first_available(facts, EQUITY_TAGS, anchor, instant=True)
+    sh = facts.as_of("us-gaap:CommonStockSharesOutstanding", anchor, instant=True)
     if eq and sh and sh.val:
         eq_tag, eq_fact = eq
         if eq_fact.end == sh.end:
@@ -107,7 +116,12 @@ def nav_per_share(facts: XbrlFacts, fund: Fund) -> list[Candidate]:
 # ---------------------------------------------------------------- LEVERAGE
 
 
-def leverage(facts: XbrlFacts, fund: Fund) -> list[Candidate]:
+def leverage(
+    facts: XbrlFacts,
+    fund: Fund,
+    anchor: date = DEFAULT_ANCHOR,
+    notices: SuppressionLog | None = None,
+) -> list[Candidate]:
     """Debt-to-equity on every basis the filer's XBRL supports.
 
     These bases genuinely differ -- gross borrowings vs. total liabilities can
@@ -116,7 +130,7 @@ def leverage(facts: XbrlFacts, fund: Fund) -> list[Candidate]:
     regulatory vs. economic leverage varies by fund.
     """
     out: list[Candidate] = []
-    eq = _first_available(facts, EQUITY_TAGS, instant=True)
+    eq = _first_available(facts, EQUITY_TAGS, anchor, instant=True)
     if not eq:
         return out
     eq_tag, eq_fact = eq
@@ -125,7 +139,7 @@ def leverage(facts: XbrlFacts, fund: Fund) -> list[Candidate]:
 
     # Basis 1: gross debt outstanding / equity. Closest to the BDC regulatory
     # asset-coverage concept the PMs mean by "leverage ratio".
-    debt = _first_available(facts, DEBT_TAGS, instant=True)
+    debt = _first_available(facts, DEBT_TAGS, anchor, instant=True)
     if debt:
         debt_tag, debt_fact = debt
         if debt_fact.end == eq_fact.end:
@@ -144,7 +158,7 @@ def leverage(facts: XbrlFacts, fund: Fund) -> list[Candidate]:
 
     # Basis 2: total liabilities / equity. Economic leverage; includes payables
     # and derivative liabilities, so it reads higher.
-    liab = facts.latest("us-gaap:Liabilities", instant=True)
+    liab = facts.as_of("us-gaap:Liabilities", anchor, instant=True)
     if liab and liab.end == eq_fact.end and eq_fact.val:
         out.append(
             facts.candidate(
@@ -163,7 +177,7 @@ def leverage(facts: XbrlFacts, fund: Fund) -> list[Candidate]:
     # independent pair of tags -- a pure internal-consistency probe. If this
     # disagrees with basis 2, the filer's balance sheet tagging is inconsistent
     # and every derived number for this fund should be downgraded.
-    assets = facts.latest("us-gaap:Assets", instant=True)
+    assets = facts.as_of("us-gaap:Assets", anchor, instant=True)
     if assets and assets.end == eq_fact.end and eq_fact.val:
         out.append(
             facts.candidate(
@@ -183,7 +197,7 @@ def leverage(facts: XbrlFacts, fund: Fund) -> list[Candidate]:
 # --------------------------------------------------------- DISTRIBUTIONS
 
 
-def dps_ledger(facts: XbrlFacts) -> list[Period]:
+def dps_ledger(facts: XbrlFacts, anchor: date = DEFAULT_ANCHOR) -> list[Period]:
     """Non-overlapping per-share distribution periods.
 
     Built from every duration-tagged distribution fact across both relevant
@@ -195,7 +209,10 @@ def dps_ledger(facts: XbrlFacts) -> list[Period]:
     rows: list[tuple[date, date, float, str]] = []
     for tag in DPS_TAGS:
         for f in facts.series(tag, instant=False):
-            if f.start and f.end:
+            # Periods extending past the anchor cannot contribute to a figure
+            # reported as of it, and admitting them would let a later quarter's
+            # distribution inflate a trailing return for the reporting quarter.
+            if f.start and f.end and f.end <= anchor:
                 rows.append((f.start, f.end, f.val, f"{f.qname}@{f.accn}"))
     return build_ledger(rows)
 
@@ -205,7 +222,12 @@ def _latest_quarter(ledger: list[Period]) -> Period | None:
     return quarters[-1] if quarters else None
 
 
-def distribution_yield(facts: XbrlFacts, fund: Fund) -> list[Candidate]:
+def distribution_yield(
+    facts: XbrlFacts,
+    fund: Fund,
+    anchor: date = DEFAULT_ANCHOR,
+    notices: SuppressionLog | None = None,
+) -> list[Candidate]:
     """Annualized distribution yield on NAV, on two standard bases.
 
     Both are reported because they answer different questions and can diverge
@@ -214,18 +236,18 @@ def distribution_yield(facts: XbrlFacts, fund: Fund) -> list[Candidate]:
     one number would hide exactly the signal a PM is benchmarking for.
     """
     out: list[Candidate] = []
-    ledger = dps_ledger(facts)
+    ledger = dps_ledger(facts, anchor)
     latest = _latest_quarter(ledger)
     if not latest:
         return out
-    navs = nav_per_share(facts, fund)
+    navs = nav_per_share(facts, fund, anchor)
     nav = next((c for c in navs if c.tier == SourceTier.XBRL), None) or (navs[0] if navs else None)
     if nav is None or not nav.value:
         return out
 
     anchor = facts.at(
         "us-gaap:CommonStockDividendsPerShareDeclared", latest.end, tolerance_days=10
-    ) or facts.latest("us-gaap:CommonStockDividendsPerShareDeclared")
+    ) or facts.as_of("us-gaap:CommonStockDividendsPerShareDeclared", anchor)
     if anchor is None:
         return out
 
@@ -275,12 +297,12 @@ def distribution_yield(facts: XbrlFacts, fund: Fund) -> list[Candidate]:
 # -------------------------------------------------------------- RETURNS
 
 
-def _nav_series(facts: XbrlFacts) -> list[Fact]:
+def _nav_series(facts: XbrlFacts, anchor: date = DEFAULT_ANCHOR) -> list[Fact]:
     """One NAV observation per period end, preferring the original filing."""
     rows = facts.series("us-gaap:NetAssetValuePerShare", instant=True)
     best: dict[date, Fact] = {}
     for f in rows:
-        if not f.end:
+        if not f.end or f.end > anchor:
             continue
         cur = best.get(f.end)
         if cur is None or (f.filed and cur.filed and f.filed < cur.filed):
@@ -296,7 +318,10 @@ _MAX_INTERNAL_GAP_DAYS = 200
 
 
 def nav_total_returns(
-    facts: XbrlFacts, fund: Fund, notices: SuppressionLog | None = None
+    facts: XbrlFacts,
+    fund: Fund,
+    anchor: date = DEFAULT_ANCHOR,
+    notices: SuppressionLog | None = None,
 ) -> list[Candidate]:
     """Trailing 1/3/5-year annualized NAV total return.
 
@@ -313,7 +338,7 @@ def nav_total_returns(
     and the two must never be compared side by side without labelling.
     """
     out: list[Candidate] = []
-    navs = _nav_series(facts)
+    navs = _nav_series(facts, anchor)
     if len(navs) < 3:
         if notices is not None:
             for metric in (M_RETURN_1Y, M_RETURN_3Y, M_RETURN_5Y):
@@ -330,28 +355,35 @@ def nav_total_returns(
                     )
                 )
         return out
-    ledger = dps_ledger(facts)
+    ledger = dps_ledger(facts, anchor)
     end_fact = navs[-1]
     end_date: date = end_fact.end  # type: ignore[assignment]
 
+    # The longest run of contiguous quarterly observations ending at the anchor.
+    # Anything before a multi-quarter gap cannot contribute to a chain-linked
+    # return, so it is not "available history" however far back it goes.
+    contiguous_start = navs[-1].end
+    for prev, cur in zip(navs, navs[1:]):
+        if (cur.end - prev.end).days > _MAX_INTERNAL_GAP_DAYS:  # type: ignore[operator]
+            contiguous_start = cur.end
     for metric, years in ((M_RETURN_1Y, 1), (M_RETURN_3Y, 3), (M_RETURN_5Y, 5)):
         target = end_date - timedelta(days=round(365.25 * years))
         tol = _WINDOW_TOLERANCE_DAYS[years]
-        anchor = min(
+        nav_anchor = min(
             (n for n in navs[:-1] if n.end),
             key=lambda n: abs((n.end - target).days),  # type: ignore[operator]
             default=None,
         )
-        if anchor is None:
+        if nav_anchor is None:
             continue
-        drift = abs((anchor.end - target).days)  # type: ignore[operator]
+        drift = abs((nav_anchor.end - target).days)  # type: ignore[operator]
         if drift > tol:
             # History exists but does not span the labelled window. Reporting it
             # as a {years}Y return would be the mislabelling the client's board
             # incident was about, so the cell states the span it actually has.
             log.info(
                 "%s %s: no NAV anchor within %dd of %s (closest %s, off by %dd) -- suppressed",
-                fund.ticker, metric, tol, target, anchor.end, drift,
+                fund.ticker, metric, tol, target, nav_anchor.end, drift,
             )
             if notices is not None:
                 notices.add(
@@ -361,26 +393,26 @@ def nav_total_returns(
                         reason=SuppressionReason.WINDOW_MISMATCH,
                         detail=(
                             f"NAV history does not span a full {years}Y window "
-                            f"(nearest anchor {anchor.end} is {drift}d from the "
+                            f"(nearest anchor {nav_anchor.end} is {drift}d from the "
                             f"{target} start date, tolerance {tol}d)"
                         ),
                         as_of=end_date,
-                        # The nearest usable anchor, not the raw history span:
-                        # GBDC has NAVs back to 2017 but only annually before
-                        # 2021, so "8.7y available" next to a blank 5Y cell
-                        # would read as a contradiction. What we can honestly
-                        # state is the window a return was computable over.
-                        coverage_start=anchor.end,
+                        # The contiguous computable run, not the raw history
+                        # span: GBDC has NAVs back to 2017 but only annually
+                        # before 2021, so "8.7y available" next to a blank 5Y
+                        # cell would read as a contradiction.
+                        coverage_start=contiguous_start,
                         coverage_end=end_date,
                         internal_note=(
-                            f"not annualized to {years}Y: would overstate the window "
-                            f"by {drift}d"
+                            f"not annualized to {years}Y: nearest usable anchor "
+                            f"{nav_anchor.end} would overstate the window by {drift}d; "
+                            f"contiguous quarterly history begins {contiguous_start}"
                         ),
                     )
                 )
             continue
 
-        window = [n for n in navs if n.end and anchor.end <= n.end <= end_date]
+        window = [n for n in navs if n.end and nav_anchor.end <= n.end <= end_date]
         if len(window) < 2 or window[0].val <= 0:
             continue
 
@@ -441,7 +473,12 @@ def nav_total_returns(
 # ------------------------------------------------------------------- FEES
 
 
-def fee_percents(facts: XbrlFacts, fund: Fund) -> list[Candidate]:
+def fee_percents(
+    facts: XbrlFacts,
+    fund: Fund,
+    anchor: date = DEFAULT_ANCHOR,
+    notices: SuppressionLog | None = None,
+) -> list[Candidate]:
     """Fee percentages from `cef:` fee-table tags.
 
     Treated with suspicion by design. These tags carry a `pure` unit (a decimal
@@ -460,7 +497,7 @@ def fee_percents(facts: XbrlFacts, fund: Fund) -> list[Candidate]:
     # context we do not trust for a headline fee rate.
     trusted_forms = {"N-2", "N-2/A", "486BPOS", "497", "424B3"}
     for metric, qname in spec:
-        f = facts.latest(qname)
+        f = facts.as_of(qname, anchor)
         if not f:
             continue
         pct = f.val * 100.0  # `pure` is a decimal fraction
@@ -487,15 +524,21 @@ def fee_percents(facts: XbrlFacts, fund: Fund) -> list[Candidate]:
 
 
 def extract_all(
-    facts: XbrlFacts, fund: Fund, notices: SuppressionLog | None = None
+    facts: XbrlFacts,
+    fund: Fund,
+    anchor: date = DEFAULT_ANCHOR,
+    notices: SuppressionLog | None = None,
 ) -> list[Candidate]:
+    """Every metric this filer's XBRL supports, as of `anchor`.
+
+    All five extractors share one signature so the dispatch stays uniform --
+    an earlier special-case here passed `notices` positionally into `anchor`
+    and silently broke trailing returns for both BDC-style filers.
+    """
     out: list[Candidate] = []
     for fn in (nav_per_share, leverage, distribution_yield, nav_total_returns, fee_percents):
         try:
-            if fn is nav_total_returns:
-                out.extend(fn(facts, fund, notices))
-            else:
-                out.extend(fn(facts, fund))
+            out.extend(fn(facts, fund, anchor, notices))
         except Exception:  # one bad metric must not sink the run
             log.exception("%s failed for %s", fn.__name__, fund.ticker)
     return [c for c in out if c.metric in fund.supported_metrics]

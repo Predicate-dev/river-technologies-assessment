@@ -258,11 +258,15 @@ def test_window_mismatch_coverage_is_the_computable_window():
         facts = XbrlFacts(gbdc, EdgarClient())
     except Exception as exc:
         pytest.skip(f"GBDC companyfacts unavailable ({type(exc).__name__}: {exc})")
-    nav_total_returns(facts, gbdc, notices)
+    nav_total_returns(facts, gbdc, notices=notices)
     s = notices.get("GBDC", M_RETURN_5Y)
     assert s is not None and s.reason is SuppressionReason.WINDOW_MISMATCH
+    # Contiguous quarterly history begins 2021-09-30; the annual-only
+    # observations before it cannot contribute to a chain-linked return.
     assert s.coverage_start == date(2021, 9, 30)
-    assert s.coverage_label.startswith("4.7y available")
+    # 2021-09-30 to the 2025-12-31 anchor. Was 4.7y when the series ran to
+    # mid-2026; anchoring the endpoint shortened it, correctly.
+    assert s.coverage_label.startswith("4.3y available")
 
 
 # ------------------------------------------------- disqualified basis (TAKIX)

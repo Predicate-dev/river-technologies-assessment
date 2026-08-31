@@ -29,6 +29,7 @@ from ..core.models import (
     SuppressionLog,
     SuppressionReason,
 )
+from ..core.temporal import DEFAULT_ANCHOR
 from ..edgar import EdgarClient, Filing
 
 log = logging.getLogger(__name__)
@@ -189,7 +190,12 @@ def _parse(filing: Filing, blob: bytes) -> NportReport | None:
     )
 
 
-def load_reports(fund: Fund, client: EdgarClient, limit: int = 8) -> list[NportReport]:
+def load_reports(
+    fund: Fund,
+    client: EdgarClient,
+    limit: int = 8,
+    anchor: date | None = DEFAULT_ANCHOR,
+) -> list[NportReport]:
     """Most recent N-PORT reports, oldest first.
 
     `limit` is a deliberate cost control: each filing is an 8 MB download and
@@ -198,15 +204,23 @@ def load_reports(fund: Fund, client: EdgarClient, limit: int = 8) -> list[NportR
     performance table instead of from 20 more downloads.
     """
     out: list[NportReport] = []
-    for filing in client.filings(fund.cik, forms=["NPORT-P"], limit=limit):
+    # Over-fetch when anchoring: the newest filings are typically past the
+    # anchor and would otherwise consume the whole budget, leaving the trailing
+    # window short for a reason that has nothing to do with data availability.
+    fetch = limit if anchor is None else limit + 4
+    for filing in client.filings(fund.cik, forms=["NPORT-P"], limit=fetch):
+        if anchor is not None and filing.report_date and filing.report_date > anchor:
+            continue
         try:
             blob = client.get(filing.doc_url("primary_doc.xml"))
         except Exception:
             log.warning("could not fetch N-PORT %s", filing.accession)
             continue
         rep = _parse(filing, blob)
-        if rep:
+        if rep and (anchor is None or (rep.period_end and rep.period_end <= anchor)):
             out.append(rep)
+        if len(out) >= limit:
+            break
     out.sort(key=lambda r: r.period_end or date.min)
     return out
 
@@ -477,8 +491,9 @@ def extract_all(
     client: EdgarClient,
     limit: int = 8,
     notices: SuppressionLog | None = None,
+    anchor: date | None = DEFAULT_ANCHOR,
 ) -> list[Candidate]:
-    reports = load_reports(fund, client, limit=limit)
+    reports = load_reports(fund, client, limit=limit, anchor=anchor)
     if not reports:
         return []
     out = leverage(fund, reports) + trailing_returns(fund, reports, notices)

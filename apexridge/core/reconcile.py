@@ -22,6 +22,8 @@ from typing import Any, Iterable
 
 from ..config import (
     ALL_METRICS,
+    M_INCENTIVE_FEE,
+    M_MGMT_FEE,
     METRIC_SANE_RANGE,
     METRIC_UNITS,
     M_DIST_YIELD,
@@ -73,6 +75,22 @@ BASIS_PREFERENCE: dict[str, list[tuple[str, str]]] = {
     M_NAV_PS: [
         ("measure", "nav_per_share"),
         ("measure", "book_value_per_share"),
+    ],
+    # A rate stated in the fund's own governing document beats a `cef:` fee
+    # tag. Without this the tag wins basis selection on tier alone, and GBDC's
+    # mis-contexted 0.0213% -- correctly tagged, from a notes prospectus rather
+    # than the fund's fee table -- displaces the true 1.0% before the
+    # confidence model ever gets to weigh them.
+    M_MGMT_FEE: [
+        ("fee_basis", "stated_annual_rate"),
+        ("fee_basis", "pct_of_net_assets"),
+        ("fee_basis", "stated_rate"),
+        ("fee_basis", "as_tagged"),
+    ],
+    M_INCENTIVE_FEE: [
+        ("fee_basis", "stated_rate"),
+        ("fee_basis", "pct_of_net_assets"),
+        ("fee_basis", "as_tagged"),
     ],
 }
 

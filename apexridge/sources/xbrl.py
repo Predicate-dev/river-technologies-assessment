@@ -148,6 +148,19 @@ class XbrlFacts:
         s = self.series(qname, **kw)
         return s[-1] if s else None
 
+    def as_of(self, qname: str, anchor: date, **kw: Any) -> Fact | None:
+        """The most recent fact whose period closed on or before `anchor`.
+
+        This, not `latest()`, is what every metric extractor wants. `latest()`
+        returns the newest observation the filer has published, which for a
+        Q4 2025 deck is typically a mid-2026 figure -- newer than anything in
+        the client's own column. Selecting on the anchor keeps every peer on
+        the same reporting quarter as Apex Ridge; the eligibility filter then
+        has nothing left to discard.
+        """
+        eligible = [f for f in self.series(qname, **kw) if f.end and f.end <= anchor]
+        return eligible[-1] if eligible else None
+
     def at(self, qname: str, period_end: date, tolerance_days: int = 5, **kw: Any) -> Fact | None:
         """The fact whose period end is closest to `period_end`, within tolerance.
 

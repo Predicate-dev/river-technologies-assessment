@@ -113,6 +113,18 @@ def freshness_factor(as_of: date | None, reference: date) -> tuple[int | None, f
     return age, FRESHNESS_STALE
 
 
+# Flags marking a candidate as something other than an independent attempt to
+# measure the current value. "reduced from 1.375% to 1.0%" is one sentence
+# naming its own history: the 1.375 is real, and retained as evidence, but it
+# is not a second measurement that happens to disagree. Counting it as one
+# fired the conflict penalty and understated two correct fee cells.
+NON_MEASUREMENT_FLAGS = frozenset({"superseded_rate"})
+
+
+def is_measurement(cand: Candidate) -> bool:
+    return not (set(cand.flags) & NON_MEASUREMENT_FLAGS)
+
+
 def independent(a: Candidate, b: Candidate) -> bool:
     """Two candidates corroborate each other only if they are not the same
     observation counted twice: different extraction mechanism, or different
@@ -132,7 +144,9 @@ def score_candidate(
     """Score one resolved value. Returns (score, audit trail of the inputs)."""
     tier = chosen.tier.base_score
 
-    independents = [c for c in corroborating if independent(chosen, c)]
+    independents = [
+        c for c in corroborating if independent(chosen, c) and is_measurement(c)
+    ]
     agreeing = [c for c in independents if values_agree(chosen.value, c.value, chosen.unit)]
     disagreeing = [c for c in independents if c not in agreeing]
 
