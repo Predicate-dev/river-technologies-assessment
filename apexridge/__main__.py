@@ -118,12 +118,27 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.metrics:
         from . import config as _config
-        from .metrics import build_registry
+        from .metrics import MetricDefinitionError, build_registry
 
-        registry = build_registry(args.metrics)
+        if not Path(args.metrics).exists():
+            # A missing file is fine for a default path, but a user who names
+            # one explicitly and gets a silent run with none of their metrics
+            # has been failed quietly.
+            parser.error(f"metrics file not found: {args.metrics}")
+        try:
+            registry = build_registry(args.metrics)
+        except MetricDefinitionError as exc:
+            # A typo in a metric definition is a user error, not a crash. A
+            # stack trace in front of a client is no way to report one.
+            parser.error(f"{args.metrics}: {exc}")
+        except (OSError, ValueError) as exc:
+            parser.error(f"could not read {args.metrics}: {exc}")
         _config.use_registry(registry)
         added = [s.key for s in registry.custom]
-        print(f"Custom metrics: {', '.join(added)}", file=sys.stderr)
+        print(
+            f"Custom metrics: {', '.join(added) if added else 'none defined'}",
+            file=sys.stderr,
+        )
 
     funds = FUNDS
     if args.funds:

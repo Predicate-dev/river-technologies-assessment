@@ -44,10 +44,6 @@ def age_days(period_end: date, anchor: date = DEFAULT_ANCHOR) -> int:
     return (anchor - period_end).days
 
 
-def is_stale(period_end: date, anchor: date = DEFAULT_ANCHOR) -> bool:
-    return age_days(period_end, anchor) > STALENESS_LIMIT_DAYS
-
-
 @dataclass(frozen=True)
 class FilingWindow:
     """Projected arrival of a filing that does not exist yet.

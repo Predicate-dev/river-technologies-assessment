@@ -99,10 +99,10 @@ def extract_fund(
         # The only class-level source for these filers, and therefore the only
         # way to meet the institutional-class requirement.
         try:
-            from .config import _REGISTRY
+            from .config import registry
 
             specs = tuple(
-                s for s in _REGISTRY
+                s for s in registry()
                 if s.highlights_rows and s.applies_to(fund.entity_type)
             )
             class_level, _tables = highlights.extract_all(
@@ -119,10 +119,10 @@ def extract_fund(
             log.exception("XBRL extraction failed for %s", fund.ticker)
 
     try:
-        from .config import _REGISTRY
+        from .config import registry
 
         prose_specs = tuple(
-            s for s in _REGISTRY
+            s for s in registry()
             if s.prose_patterns and s.applies_to(fund.entity_type)
         )
         candidates += narrative.extract_all(

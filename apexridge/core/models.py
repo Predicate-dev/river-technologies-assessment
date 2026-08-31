@@ -246,9 +246,6 @@ class ResolvedMetric:
     # Present iff `value is None`. A blank cell is never bare: it states why.
     suppression: "Suppression | None" = None
 
-    def n_sources(self) -> int:
-        return (1 if self.chosen else 0) + len(self.alternatives)
-
     @property
     def citation(self) -> str:
         return self.chosen.provenance.citation if self.chosen else ""

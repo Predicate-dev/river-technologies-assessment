@@ -128,3 +128,18 @@ def test_registry_views_update_config_in_place():
     finally:
         config.use_registry(build_registry(None))
         assert list(config.ALL_METRICS) == original
+
+
+def test_a_definition_error_names_the_file_and_the_problem():
+    """A typo in a metric definition is a user error. The message has to say
+    which file and which metric, or it is not actionable."""
+    with pytest.raises(MetricDefinitionError) as exc:
+        parse_spec({"key": "x", "label": "X", "unit": "parsecs"})
+    assert "x" in str(exc.value) and "parsecs" in str(exc.value)
+
+
+def test_registry_rejects_a_second_definition_of_the_same_custom_key():
+    a = parse_spec({"key": "dup", "label": "One"})
+    b = parse_spec({"key": "dup", "label": "Two"})
+    with pytest.raises(MetricDefinitionError, match="duplicate"):
+        MetricRegistry([a, b])

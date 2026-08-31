@@ -101,10 +101,6 @@ class NportReport:
     # month_end -> (return_pct, class_id or None)
     monthly_returns: list[tuple[date, float, str | None]] = field(default_factory=list)
 
-    def raw_url(self) -> str:
-        return self.filing.doc_url("primary_doc.xml")
-
-
 def _parse(filing: Filing, blob: bytes) -> NportReport | None:
     """Parse the header/fundInfo prefix of an N-PORT document.
 

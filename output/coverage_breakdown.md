@@ -1,6 +1,6 @@
 # Coverage breakdown — cell by cell
 
-Reporting quarter 2025-12-31. **28 of 48 competitor cells populated.**
+Reporting quarter 2025-12-31. **26 of 36 competitor cells populated.**
 
 Each empty cell is classified by who owns the gap. The OURS rows are the ones this system can act on; the rest need either a client decision or a filing that does not exist.
 
@@ -17,51 +17,35 @@ Each empty cell is classified by who owns the gap. The OURS rows are the ones th
 | NAV per share | **10.77 usd** (Low) | **8.32 usd** (Low) | **14.84 usd** (High) | **18.22 usd** (Low) |
 | Leverage (D/E) | **0.3186 ratio** (Medium) | _CLIENT_ | **1.254 ratio** (Medium) | **2.449 ratio** (Medium) |
 | Distribution yield (ann.) | _CADENCE_ | **9.014 pct** (Medium) | **10.43 pct** (Medium) | **5.449 pct** (Medium) |
-| Portfolio turnover | _CADENCE_ | **13 pct** (Low) | _OURS_ | _STRUCTURAL_ |
-| Non-accrual rate (% of portfolio) | _OURS_ | _OURS_ | **0.3 pct** (Low) | _OURS_ |
-| Weighted average spread (bps) | _OURS_ | _OURS_ | _OURS_ | _OURS_ |
 
 ## Where the gaps sit
 
 | Owner | Cells | Meaning |
 | --- | --- | --- |
-| FILLED | 28 | reported with a confidence grade |
-| OURS | 8 | extraction we have not built, or evidence too thin |
-| CADENCE | 5 | figure exists but falls outside the six-month window |
+| FILLED | 26 | reported with a confidence grade |
+| OURS | 0 | extraction we have not built, or evidence too thin |
+| CADENCE | 4 | figure exists but falls outside the six-month window |
 | CLIENT | 1 | computable, withheld pending a client decision |
-| STRUCTURAL | 6 | the filer does not publish it; no work would fix it |
+| STRUCTURAL | 5 | the filer does not publish it; no work would fix it |
 
-### Ours to close (8)
-
-- **CCLFX — Non-accrual rate (% of portfolio)** [no_candidate]: no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below
-- **CCLFX — Weighted average spread (bps)** [no_candidate]: no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below
-- **GBDC — Portfolio turnover** [no_candidate]: no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below
-- **GBDC — Weighted average spread (bps)** [no_candidate]: no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below
-- **KREF — Non-accrual rate (% of portfolio)** [no_candidate]: no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below
-- **KREF — Weighted average spread (bps)** [no_candidate]: no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below
-- **TAKIX — Non-accrual rate (% of portfolio)** [no_candidate]: no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below
-- **TAKIX — Weighted average spread (bps)** [no_candidate]: no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below
-
-### Cadence-limited (5)
+### Cadence-limited (4)
 
 - **CCLFX — Distribution yield (ann.)** [stale_beyond_limit]: figure exists but predates the six-month line
 - **CCLFX — Net return, trailing 1Y (ann.)** [stale_beyond_limit]: figure exists but predates the six-month line
 - **CCLFX — Net return, trailing 3Y (ann.)** [stale_beyond_limit]: figure exists but predates the six-month line
 - **CCLFX — Net return, trailing 5Y (ann.)** [stale_beyond_limit]: figure exists but predates the six-month line
-- **CCLFX — Portfolio turnover** [stale_beyond_limit]: figure exists but predates the six-month line
 
 ### Blocked on a client decision (1)
 
 - **TAKIX — Leverage (D/E)** [basis_disqualified]: computable, withheld pending a definition the client is deciding
 
-### Structural — no work would fix these (6)
+### Structural — no work would fix these (5)
 
 - **CCLFX — Incentive hurdle** [not_applicable]: filer does not publish this concept; no extraction would fix it
 - **GBDC — Net return, trailing 5Y (ann.)** [window_mismatch]: filer's tagged history does not span the labelled window
 - **KREF — Net return, trailing 1Y (ann.)** [not_applicable]: filer does not publish this concept; no extraction would fix it
 - **KREF — Net return, trailing 3Y (ann.)** [not_applicable]: filer does not publish this concept; no extraction would fix it
 - **KREF — Net return, trailing 5Y (ann.)** [not_applicable]: filer does not publish this concept; no extraction would fix it
-- **KREF — Portfolio turnover** [not_applicable]: filer does not publish this concept; no extraction would fix it
 
 ## Confidence of what is populated
 
@@ -69,4 +53,4 @@ Each empty cell is classified by who owns the gap. The OURS rows are the ones th
 | --- | --- |
 | High | 1 |
 | Medium | 12 |
-| Low | 15 |
+| Low | 13 |

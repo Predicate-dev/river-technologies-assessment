@@ -17,9 +17,6 @@ Peer-to-peer statistics below are unaffected: they do not depend on Apex's basis
 | NAV per share | $10.77 | $8.32–$14.84 | TAKIX $8.32, CCLFX $10.77, GBDC $14.84 _(ordered, not ranked)_ | $26.12 _(delta withheld)_ |
 | Leverage (D/E) | 1.25x | 0.32x–2.45x | CCLFX 0.32x, GBDC 1.25x, KREF 2.45x _(ordered, not ranked)_ | 0.96x _(delta withheld)_ |
 | Distribution yield (ann.) | 9.01% | 5.45%–10.43% | GBDC 10.43%, TAKIX 9.01%, KREF 5.45% | 9.22% _(delta withheld)_ |
-| Portfolio turnover | 13.00% | 13.00%–13.00% | TAKIX 13.00% _(ordered, not ranked)_ | — |
-| Non-accrual rate (% of portfolio) | 0.30% | 0.30%–0.30% | GBDC 0.30% _(ordered, not ranked)_ | — |
-| Weighted average spread (bps) | — | — | no comparable peers | — |
 
 ## Excluded from the statistics — different basis
 
@@ -30,4 +27,4 @@ A figure on a different basis is not in the same distribution. These are reporte
 
 ## Not ranked
 
-A rank implies better and worse. For NAV per share and Leverage (D/E) and Portfolio turnover and Non-accrual rate (% of portfolio) and Weighted average spread (bps) that is not defined — a NAV per share is a share price, not a quality, and a leverage ratio is a risk posture, not a score. Both are shown in order without a ranking claim.
+A rank implies better and worse. For NAV per share and Leverage (D/E) that is not defined — a NAV per share is a share price, not a quality, and a leverage ratio is a risk posture, not a score. Both are shown in order without a ranking claim.

@@ -122,6 +122,17 @@ METRIC_SANE_RANGE = _REGISTRY.ranges()
 METRIC_DIRECTION = _REGISTRY.directions()
 
 
+def registry() -> "_metrics.MetricRegistry":
+    """The metric registry in force for this run.
+
+    A function rather than a module constant because `use_registry` swaps it at
+    startup; a module-level name would be captured at import time by whichever
+    module imported it first, which is the same trap `ALL_METRICS` avoids by
+    mutating in place.
+    """
+    return _REGISTRY
+
+
 def use_registry(registry: "_metrics.MetricRegistry") -> None:
     """Swap in a registry that includes custom metrics, at startup.
 

@@ -28,7 +28,7 @@ import urllib.parse
 from dataclasses import dataclass, field
 from datetime import date
 
-from .config import Fund, _REGISTRY
+from .config import Fund, registry
 from .edgar import EdgarClient
 
 log = logging.getLogger(__name__)
@@ -236,7 +236,7 @@ def to_fund(c: Classification, institutional_class: str = "") -> Fund:
         "mortgage_reit": ("10-K", "10-Q", "8-K"),
     }[c.entity_type]
     supported = tuple(
-        k for k in _REGISTRY.keys
+        k for k in registry().keys
         if c.entity_type != "mortgage_reit" or not k.startswith("net_return")
     )
     return Fund(
