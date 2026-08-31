@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from datetime import date
 
-from ..config import Fund, METRIC_UNITS
+from ..config import Fund, METRIC_UNITS, M_RETURN_1Y, M_RETURN_3Y, M_RETURN_5Y
 from ..core import temporal
 from ..core.models import (
     Cell,
@@ -119,6 +119,22 @@ _OBSERVED_LAGS: dict[str, list[int]] = {
 }
 
 
+# Metrics where deck footnote 3 asserts an institutional-class figure. Lara made
+# this a hard requirement: a blended fund-level number understates fee drag and
+# flatters the competitor, and a cell contradicting the footnote is the exact
+# discrepancy she said a PM would catch. Whether a labelled fund-level figure is
+# acceptable as a named fallback is with the CIO; until he rules, it blanks.
+CLASS_REQUIRED_METRICS = frozenset({M_RETURN_1Y, M_RETURN_3Y, M_RETURN_5Y})
+
+
+def violates_class_requirement(fund: Fund, metric: str, basis: str) -> bool:
+    return (
+        fund.entity_type == "interval_fund"
+        and metric in CLASS_REQUIRED_METRICS
+        and "fund level" in basis.lower()
+    )
+
+
 def blank_cell(
     fund: Fund,
     metric: str,
@@ -181,6 +197,18 @@ def build_cell(
 
     chosen: Candidate | None = resolved.chosen
     basis = format_basis(chosen.basis if chosen else {})
+    if violates_class_requirement(fund, metric, basis):
+        # Enforced here rather than upstream: this is a question about whether
+        # the cell matches what the deck claims about itself, which is a
+        # presentation question. The value is not lost -- it stays in the audit
+        # trail, and flipping this to a marked fallback is one branch if the
+        # CIO allows it.
+        return Cell.blank(
+            fund.ticker, metric, ReasonCode.WRONG_SHARE_CLASS,
+            detail=f"{basis}; institutional class required by deck footnote 3",
+            as_of=chosen.as_of if chosen else None,
+            share_class=ShareClass.FUND_LEVEL,
+        )
     return Cell.filled(
         resolved,
         basis=basis or "as reported",

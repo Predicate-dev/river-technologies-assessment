@@ -60,7 +60,8 @@ _OWNER = {
     ),
     SuppressionReason.NO_CANDIDATE: (
         OURS,
-        "extraction not built for this metric on this filer type",
+        "no EDGAR source located; either extraction we have not built, or the "
+        "figure is not in the filings at all -- see the caveat below",
     ),
     SuppressionReason.BELOW_CONFIDENCE_FLOOR: (
         OURS,
@@ -130,9 +131,20 @@ def coverage_markdown(run: BenchmarkRun) -> str:
         f"Reporting quarter {run.anchor.isoformat()}. "
         f"**{len(filled)} of {len(rows)} competitor cells populated.**",
         "",
-        "Each empty cell is classified by who owns the gap. Only the OURS rows "
-        "are work this system can close; the rest need either a client decision "
-        "or a filing that does not exist.",
+        "Each empty cell is classified by who owns the gap. The OURS rows are "
+        "the ones this system can act on; the rest need either a client "
+        "decision or a filing that does not exist.",
+        "",
+        "> **Caveat on the OURS rows.** These assume the figure exists somewhere "
+        "in the filer's EDGAR filings and we have simply not built the "
+        "extraction. That assumption is now open: the client has confirmed her "
+        "analysts sometimes source from fund websites, investor-relations pages "
+        "and press releases as well as EDGAR. Any cell filled that way in the "
+        "manual pack has no EDGAR source and cannot be closed within the "
+        "current scope, however much extraction we build. Until the client's "
+        "cell-by-cell source review comes back, treat OURS as *not yet ruled "
+        "out* rather than as a committed backlog, and do not read a projected "
+        "coverage number off this table.",
         "",
         "| | " + " | ".join(tickers) + " |",
         "| --- |" + " --- |" * len(tickers),

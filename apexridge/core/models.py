@@ -89,6 +89,7 @@ class ReasonCode(str, Enum):
     LOW_EVIDENCE = "low_evidence"  # Below the confidence floor.
     CONFLICTED = "conflicted"  # Independent sources genuinely disagree.
     BASIS_NOT_MEASURED = "basis_not_measured"  # Basis known, and it measures nothing.
+    WRONG_SHARE_CLASS = "wrong_share_class"  # Fund-level found; institutional required.
     BASIS_UNCONFIRMED = "basis_unconfirmed"  # Basis unknown; comparison unsafe.
 
     @property
@@ -106,6 +107,7 @@ _REASON_LABEL = {
     ReasonCode.LOW_EVIDENCE: "evidence too weak to report",
     ReasonCode.CONFLICTED: "sources disagree; not resolved",
     ReasonCode.BASIS_NOT_MEASURED: "reported basis does not measure this metric",
+    ReasonCode.WRONG_SHARE_CLASS: "fund-level only; institutional figure not available",
     ReasonCode.BASIS_UNCONFIRMED: "basis unconfirmed",
 }
 

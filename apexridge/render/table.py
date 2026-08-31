@@ -142,10 +142,62 @@ def build_cells(run: BenchmarkRun) -> dict[str, dict[str, Cell]]:
     return grid
 
 
+# A peer with at most this many populated cells is demoted out of the main
+# table and reported as a footnote instead. Lara's ruling on TAKIX: "A column
+# with one cell is not a comparison, it is noise, and a PM will ask why it is
+# there." The threshold is 1 rather than something more aggressive because a
+# demotion is a large silent decision, and she has been explicit that she does
+# not want those -- CCLFX at 3 of 9 must keep its column and argue for itself.
+# Every demotion is announced in the output; none of them happen quietly.
+DEMOTION_MAX_POPULATED = 1
+
+
+def populated_count(grid: dict[str, dict[str, Cell]], ticker: str) -> int:
+    return sum(1 for m in grid if not grid[m][ticker].is_blank)
+
+
+def partition_columns(grid: dict[str, dict[str, Cell]], tickers: list[str]) -> tuple[list[str], list[str]]:
+    """Split peers into table columns and footnote-only entries."""
+    kept, demoted = [], []
+    for t in tickers:
+        (demoted if populated_count(grid, t) <= DEMOTION_MAX_POPULATED else kept).append(t)
+    return kept, demoted
+
+
+def demoted_footnote(grid: dict[str, dict[str, Cell]], ticker: str, run: "BenchmarkRun") -> list[str]:
+    """What a demoted peer still owes the reader: what is absent, and why.
+
+    Dropping the column must not drop the information. The zero-borrowings
+    finding in particular has to stay visible -- it is a statement about the
+    filer's disclosure, not about our extraction.
+    """
+    fund = run.results[ticker].fund
+    n = populated_count(grid, ticker)
+    out = [
+        "",
+        f"### {ticker} — {fund.name}",
+        "",
+        f"Reported as a footnote rather than a column: {n} of {len(grid)} metrics "
+        "populate, which is not enough to support a comparison. Removed from the "
+        "table so the row reads honestly, not because the peer was dropped.",
+        "",
+    ]
+    for metric in ALL_METRICS:
+        cell = grid[metric][ticker]
+        label = METRIC_LABELS.get(metric, metric)
+        if cell.is_blank:
+            detail = f" — {cell.detail}" if cell.detail else ""
+            out.append(f"- **{label}**: not reported. {cell.reason.label}{detail}.")
+        else:
+            out.append(f"- **{label}**: {_cell_text(cell)}")
+    return out
+
+
 def board_markdown(run: BenchmarkRun) -> str:
     """The board table, in the layout the PMs already read."""
     grid = build_cells(run)
-    columns = [APEX_COLUMN] + list(run.results)
+    kept, demoted = partition_columns(grid, list(run.results))
+    columns = [APEX_COLUMN] + kept
     lines = [
         "# Peer benchmarking — private credit comparables",
         "",
@@ -162,6 +214,19 @@ def board_markdown(run: BenchmarkRun) -> str:
     for metric in ALL_METRICS:
         cells = [_cell_text(grid[metric][c]) for c in columns]
         lines.append(f"| {METRIC_LABELS[metric]} | " + " | ".join(cells) + " |")
+
+    if demoted:
+        names = ", ".join(demoted)
+        lines += [
+            "",
+            f"_{names} {'is' if len(demoted) == 1 else 'are'} reported below "
+            "rather than as a column: too few metrics populate to support a "
+            "comparison. Nothing is hidden — every metric is listed with its "
+            "reason._",
+        ]
+        lines += ["", "## Peers reported as footnotes", ""]
+        for ticker in demoted:
+            lines += demoted_footnote(grid, ticker, run)
 
     lines += ["", "## Source conflicts resolved in this run", ""]
     conflicts = run.conflicts
