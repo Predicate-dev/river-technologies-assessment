@@ -22,7 +22,7 @@ from dataclasses import dataclass
 from datetime import date, timedelta
 
 from ..config import get_fund
-from .models import ReasonCode
+from .models import Candidate, ReasonCode, Suppression, SuppressionLog, SuppressionReason
 
 # The six-month line is the client's, and it is defined once, in confidence.py,
 # alongside the continuous freshness factor it is deliberately separate from.
@@ -118,3 +118,65 @@ def classify(period_end: date | None, anchor: date = DEFAULT_ANCHOR) -> ReasonCo
     if is_stale(period_end, anchor):
         return ReasonCode.STALE
     return None
+
+
+def filter_eligible(
+    candidates: list[Candidate],
+    anchor: date = DEFAULT_ANCHOR,
+    notices: SuppressionLog | None = None,
+) -> list[Candidate]:
+    """Drop candidates whose reporting period closes after the anchor.
+
+    Without this the deck silently compares peers against a later reality than
+    Apex's own column: CCLFX and TAKIX file N-PORT through 2026-06-30 while
+    Apex's data ends 2025-12-31, so a Q4 2025 board deck would show peers on
+    six months of newer information and read as a like-for-like comparison.
+    That is a worse failure than a blank, because nothing on the slide reveals
+    it.
+
+    Eligibility is about the period a figure *covers*, not when it was filed.
+    A TAKIX N-CSR for 2025-12-31 filed in February 2026 is the correct figure
+    for a Q4 2025 deck; a June 2026 N-PORT is not, however early it arrived.
+
+    Where filtering removes every candidate for a metric, a notice is recorded
+    so the blank says the figures exist but postdate the anchor -- which is a
+    materially different statement from "we found nothing".
+    """
+    eligible: list[Candidate] = []
+    dropped: dict[tuple[str, str], list[Candidate]] = {}
+    for cand in candidates:
+        period_end = cand.as_of or cand.provenance.period_end
+        if is_eligible(period_end, anchor):
+            eligible.append(cand)
+        else:
+            dropped.setdefault((cand.fund_ticker, cand.metric), []).append(cand)
+
+    if notices is not None:
+        surviving = {(c.fund_ticker, c.metric) for c in eligible}
+        for key, lost in dropped.items():
+            if key in surviving:
+                continue  # an eligible figure remains; nothing to explain
+            ticker, metric = key
+            earliest = min(
+                (c.as_of or c.provenance.period_end for c in lost if c.as_of or c.provenance.period_end),
+                default=None,
+            )
+            notices.add(
+                Suppression(
+                    fund_ticker=ticker,
+                    metric=metric,
+                    reason=SuppressionReason.NO_CANDIDATE,
+                    detail=(
+                        "no figure covering a period on or before the "
+                        f"{anchor.isoformat()} reporting quarter"
+                    ),
+                    as_of=earliest,
+                    internal_note=(
+                        f"{len(lost)} candidate(s) found but every reporting period "
+                        f"closes after the anchor (earliest {earliest}); excluded to "
+                        "keep the peer columns on the same reporting quarter as Apex "
+                        "Ridge. Not a source gap -- an alignment exclusion."
+                    ),
+                )
+            )
+    return eligible

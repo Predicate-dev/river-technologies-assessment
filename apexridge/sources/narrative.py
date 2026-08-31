@@ -283,10 +283,6 @@ PROSE_RULES: list[tuple[str, tuple[str, ...], list[str], dict[str, Any]]] = [
             r"management fee[^.]{0,160}?at an annual rate of\s*" + _PCT,
             r"annual rate of\s*" + _PCT + r"[^.]{0,80}?(?:of|based upon)[^.]{0,60}?net assets",
             r"management fee[^.]{0,120}?equal to\s*" + _PCT + r"[^.]{0,60}?per annum",
-            # "reduced from 1.375% to 1.0%" -- the CURRENT rate is the second
-            # number. Reading the first is the exact class of error that put a
-            # wrong basis point in the client's board deck last year.
-            r"management fee rate was reduced from\s*[0-9.]+\s*%\s*to\s*" + _PCT,
         ],
         {"fee_basis": "stated_annual_rate"},
     ),
@@ -306,12 +302,6 @@ PROSE_RULES: list[tuple[str, tuple[str, ...], list[str], dict[str, Any]]] = [
         M_INCENTIVE_FEE,
         ("incentive fee", "incentive compensation", "carried interest"),
         [
-            # Most specific first. "the incentive fee rates were reduced from
-            # 20.0% to 15.0%" names both the old and the current rate; the
-            # current one is the second. Reading the first is the exact error
-            # class that put a wrong figure in the client's board deck.
-            r"incentive fee (?:rates?|cap)? ?(?:were|was) reduced from"
-            r"\s*[0-9.]+\s*%\s*to\s*" + _PCT,
             # BDC form: "...equal to 15.0% of our Cumulative Pre-Incentive Fee
             # Net Income". REIT form: "incentive compensation equal to 20.0% of
             # the excess of...". The prefix window is generous because the fee
@@ -405,11 +395,6 @@ def prose_patterns(doc: Doc) -> list[Candidate]:
                         text, m.start(1), m.end(1)
                     )
                     value *= mult
-                if re.search(r"reduced from\s*[0-9.]+\s*%", text, re.I):
-                    # Both the old and the new rate are present in this window.
-                    # We resolve to the current one, but a reviewer should know
-                    # the ambiguity was there.
-                    flags.append("superseded_rate_present_in_source")
                 if metric == M_INCENTIVE_FEE and not 5.0 <= value <= 25.0:
                     # Outside the range every externally-managed credit fund
                     # actually charges. Almost always a pattern that latched
@@ -434,6 +419,74 @@ def prose_patterns(doc: Doc) -> list[Candidate]:
                     )
                 )
                 break
+    return out
+
+
+# ---------------------------------------------------------- superseded rates
+
+# "the base management fee rate was reduced from 1.375% to 1.0%" states the old
+# and the current rate in one sentence. Both are real values from the filing and
+# reading the wrong one is exactly the misread that put a wrong basis point in
+# the client's board deck, so we do NOT quietly pick one inside the extractor.
+# Both are emitted as candidates on the same basis; reconciliation resolves them
+# and logs the conflict, so the appendix can show a PM why 1.0% beat 1.375%
+# rather than a flag noting that an ambiguity existed somewhere.
+SUPERSEDED_RULES: list[tuple[str, tuple[str, ...], str, dict[str, Any]]] = [
+    (
+        M_MGMT_FEE,
+        ("management fee", "base management fee"),
+        r"management fee rate (?:was|were) reduced from\s*" + _PCT + r"\s*to\s*" + _PCT,
+        # Must match the basis the plain prose rule emits for this metric,
+        # otherwise the superseded rate lands in a separate basis group and is
+        # reported as a legitimate alternative rather than losing a conflict.
+        {"fee_basis": "stated_annual_rate"},
+    ),
+    (
+        M_INCENTIVE_FEE,
+        ("incentive fee",),
+        r"incentive fee (?:rates?|cap)? ?(?:were|was) reduced from\s*"
+        + _PCT + r"\s*to\s*" + _PCT,
+        {"fee_basis": "stated_rate"},
+    ),
+]
+
+
+def superseded_rates(doc: Doc) -> list[Candidate]:
+    """Emit both sides of a "reduced from X% to Y%" disclosure as candidates."""
+    out: list[Candidate] = []
+    seen: set[tuple[str, float]] = set()
+    for metric, phrases, pattern, basis in SUPERSEDED_RULES:
+        for pos in anchors(doc.html, phrases, limit_per_phrase=PROSE_ANCHOR_LIMIT):
+            text = window_text(doc.html, pos)
+            m = re.search(pattern, text, re.I)
+            if not m:
+                continue
+            old_rate, current_rate = float(m.group(1)), float(m.group(2))
+            excerpt = text[max(0, m.start() - 90) : m.end() + 90]
+            for value, is_current in ((current_rate, True), (old_rate, False)):
+                if (metric, value) in seen:
+                    continue
+                seen.add((metric, value))
+                out.append(
+                    doc.candidate(
+                        metric,
+                        value,
+                        unit="pct",
+                        tier=SourceTier.TEXT_PATTERN,
+                        locator=f"superseded-rate disclosure @ char {pos} "
+                        f"({'current' if is_current else 'superseded'} rate)",
+                        excerpt=excerpt,
+                        basis=dict(basis),
+                        transforms=[
+                            f"read as the {'current' if is_current else 'superseded'} "
+                            f"rate in \"reduced from {old_rate}% to {current_rate}%\""
+                        ],
+                        # The superseded rate must lose reconciliation on
+                        # evidence, not on ordering: the flag is what makes it
+                        # lose the fewest-flags tiebreak against the current one.
+                        flags=[] if is_current else ["superseded_rate"],
+                    )
+                )
     return out
 
 
@@ -597,10 +650,35 @@ NARRATIVE_FORMS = {
 MAX_DOC_BYTES = 40_000_000
 
 
-def load_docs(fund: Fund, client: EdgarClient, per_form: int = 1) -> list[Doc]:
+def load_docs(
+    fund: Fund,
+    client: EdgarClient,
+    per_form: int = 1,
+    anchor: date | None = None,
+) -> list[Doc]:
+    """Load the narrative documents in force as of `anchor`.
+
+    Document selection has to respect the anchor the same way figure selection
+    does, but the test is different. A figure is eligible on the period it
+    covers; a prospectus or 10-K is eligible on when it was *filed*, because it
+    states the terms in force from that date. Taking the newest prospectus
+    regardless would report a fee rate the client's own reporting quarter never
+    saw -- and would do it silently, since a fee rate carries no period end to
+    give the mismatch away.
+    """
     docs: list[Doc] = []
     for form in NARRATIVE_FORMS.get(fund.entity_type, ()):
-        for filing in client.filings(fund.cik, forms=[form], limit=per_form):
+        # Over-fetch, then take the newest filing at or before the anchor.
+        found = client.filings(fund.cik, forms=[form], limit=max(per_form, 8))
+        if anchor is not None:
+            eligible = [f for f in found if f.filing_date and f.filing_date <= anchor]
+            if not eligible and found:
+                log.info(
+                    "%s: no %s filed on or before anchor %s; earliest available %s",
+                    fund.ticker, form, anchor, found[-1].filing_date,
+                )
+            found = eligible
+        for filing in found[:per_form]:
             try:
                 blob = client.get(filing.primary_url)
             except Exception:
@@ -622,10 +700,11 @@ def extract_all(
     *,
     use_llm: bool = False,
     llm_client: Any = None,
+    anchor: date | None = None,
 ) -> list[Candidate]:
     out: list[Candidate] = []
-    for doc in load_docs(fund, client):
-        for fn in (fee_tables, return_tables, prose_patterns):
+    for doc in load_docs(fund, client, anchor=anchor):
+        for fn in (fee_tables, return_tables, prose_patterns, superseded_rates):
             try:
                 out.extend(fn(doc))
             except Exception:
