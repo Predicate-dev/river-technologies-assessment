@@ -63,18 +63,32 @@ class Confidence(str, Enum):
 
 
 class ReasonCode(str, Enum):
-    """Why a cell is empty. A bare blank is unrepresentable in the output.
+    """Why a cell is empty, in the words a PM reads. A bare blank cannot render.
 
-    The client's board incident was a wrong number, not a missing one: "a blank
-    cell generates a question I can answer, a confident wrong number generates
-    one I cannot." So blanks are cheap here -- but only if the reader can tell
-    a structural gap from a broken pipeline at a glance.
+    Distinct from `SuppressionReason`, which is the diagnosis emitted upstream.
+    This is the presentation layer, and it is near 1:1 with that enum -- a
+    thinner abstraction than it looks. It is kept separate for two reasons: the
+    wording here is client-facing and is quoted from Lara ("institutional figure
+    not yet filed"), and two of these states never arise from a suppression at
+    all. If the mapping ever stops being nearly 1:1, collapse this into a label
+    table on SuppressionReason; see NOTES/decisions.md.
+
+    Every label must be true of every case routed to it. The first draft failed
+    this: SUPPRESSED read "sources disagree" and was catching GBDC's 5Y, where
+    nothing disagreed. Telling a PM something false about a filing is the same
+    class of error as a wrong number -- it produces a question Lara cannot
+    answer.
     """
 
-    NOT_APPLICABLE = "not_applicable"  # Metric does not exist for this filer.
-    NOT_YET_FILED = "not_yet_filed"  # Class-level cadence gap; window projected.
-    STALE = "stale"  # Figure exists but predates the staleness line.
-    SUPPRESSED = "suppressed"  # Unresolved conflict, or below confidence.
+    NOT_APPLICABLE = "not_applicable"  # Filer does not publish this concept.
+    NOT_YET_FILED = "not_yet_filed"  # Genuine cadence gap; carries a window.
+    STALE = "stale"  # Figure exists but predates the six-month line.
+    NO_VALUE_FOUND = "no_value_found"  # Applicable, nothing extracted.
+    NOT_COMPUTABLE = "not_computable"  # History too short or wrong window.
+    CLASS_UNATTRIBUTED = "class_unattributed"  # Series present, class unnamed.
+    LOW_EVIDENCE = "low_evidence"  # Below the confidence floor.
+    CONFLICTED = "conflicted"  # Independent sources genuinely disagree.
+    BASIS_NOT_MEASURED = "basis_not_measured"  # Basis known, and it measures nothing.
     BASIS_UNCONFIRMED = "basis_unconfirmed"  # Basis unknown; comparison unsafe.
 
     @property
@@ -86,7 +100,12 @@ _REASON_LABEL = {
     ReasonCode.NOT_APPLICABLE: "not reported at this basis",
     ReasonCode.NOT_YET_FILED: "institutional figure not yet filed",
     ReasonCode.STALE: "no figure within staleness window",
-    ReasonCode.SUPPRESSED: "sources disagree; not resolved",
+    ReasonCode.NO_VALUE_FOUND: "no figure located in filings",
+    ReasonCode.NOT_COMPUTABLE: "insufficient history to compute",
+    ReasonCode.CLASS_UNATTRIBUTED: "share class not identifiable in filing",
+    ReasonCode.LOW_EVIDENCE: "evidence too weak to report",
+    ReasonCode.CONFLICTED: "sources disagree; not resolved",
+    ReasonCode.BASIS_NOT_MEASURED: "reported basis does not measure this metric",
     ReasonCode.BASIS_UNCONFIRMED: "basis unconfirmed",
 }
 
