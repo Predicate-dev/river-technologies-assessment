@@ -1,7 +1,7 @@
 # Technical approach — competitor benchmarking pipeline
 
 **Audience:** Apex Ridge technical counterpart
-**Status:** prototype against live SEC EDGAR · 69 tests · 26 of 36 competitor cells populate at the Q4 2025 anchor
+**Status:** prototype against live SEC EDGAR · 89 tests · 26 of 36 competitor cells populate at the Q4 2025 anchor
 
 ---
 
@@ -16,7 +16,7 @@ EDGAR (live) ─► source adapters ─► candidates ─► eligibility filter
        resolved value              suppression
        + confidence + provenance   + typed reason
                            │
-                       render ─► board table · coverage · NAV trend · audit trail
+                       render ─► board table · coverage · comparison · NAV trend · audit trail
 ```
 
 `edgar.py` is rate-limited to 8 req/s (SEC's ceiling is 10), sends a descriptive
@@ -161,7 +161,7 @@ the regulatory-vs-economic question now with your CIO.
 
 | Risk | Mitigation |
 | --- | --- |
-| **Filers change wording; prose patterns stop matching.** Most likely failure. | A miss produces a blank with a reason, never a wrong number. Add a per-metric alert: a value that populated last quarter and stops is the signal. |
+| **Filers change wording; prose patterns stop matching.** Most likely failure. | A miss produces a blank with a reason, never a wrong number — which is why it goes unnoticed. `--compare-to` diffs a run against the previous quarter's coverage, names what stopped populating and why, and exits non-zero so a scheduled run gates on it. |
 | **A filer re-tags XBRL or tags the wrong document.** Already observed. | Cross-mechanism agreement plus plausibility ranges; flagged and suppressed, not trusted on tier. |
 | **Silent arithmetic drift.** | Day-count annualization with window tolerances; a window that does not match its label is suppressed, not rounded. Ledger arithmetic is unit-tested against real failure modes. |
 | **Source scope expands beyond EDGAR.** Likely. | Adopt web sources only as a distinct, visibly lower tier. A filing has an accession number, an immutable version and a retrievable audit trail; a web page has none. Never blend silently — that would undermine the one property making this defensible. It is a new tier value and a penalty, not a redesign. |

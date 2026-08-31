@@ -12,6 +12,7 @@ import argparse
 import logging
 import sys
 from datetime import date, datetime
+from pathlib import Path
 
 from .config import ALL_METRICS, FUNDS, OUTPUT_DIR, SEC_USER_AGENT
 from .edgar import EdgarClient
@@ -56,6 +57,13 @@ def main(argv: list[str] | None = None) -> int:
         help="Enable the LLM narrative tier. Requires ANTHROPIC_API_KEY and, "
              "per the open compliance item, client sign-off.",
     )
+    parser.add_argument(
+        "--compare-to", metavar="COVERAGE_CSV", default=None,
+        help="A previous run's coverage_breakdown.csv. Reports what populated "
+             "then and blanks now -- the signal that a filer changed wording. "
+             "Exits non-zero if any coverage was lost, so it can gate a "
+             "scheduled run.",
+    )
     parser.add_argument("--print", action="store_true", help="Print the table to stdout.")
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args(argv)
@@ -89,6 +97,25 @@ def main(argv: list[str] | None = None) -> int:
     if args.print:
         print(board_markdown(result))
 
+    lost_coverage: list = []
+    if args.compare_to:
+        from .render.regression import LOST, run_regression
+
+        changes, report = run_regression(
+            args.compare_to, Path(args.out) / "coverage_breakdown.csv"
+        )
+        (Path(args.out) / "regression_report.md").write_text(report)
+        lost = lost_coverage = [c for c in changes if c.kind == LOST]
+        print(f"Regression:  {Path(args.out) / 'regression_report.md'}", file=sys.stderr)
+        if lost:
+            print(
+                f"\nWARNING: {len(lost)} cell(s) populated in the previous run and "
+                "blank now:",
+                file=sys.stderr,
+            )
+            for c in lost:
+                print(f"  - {c.fund} {c.label}", file=sys.stderr)
+
     filled = sum(
         1
         for res in result.results.values()
@@ -110,7 +137,7 @@ def main(argv: list[str] | None = None) -> int:
         + (f"\nNAV trend:   {paths['trend']}" if "trend" in paths else ""),
         file=sys.stderr,
     )
-    return 0
+    return 2 if lost_coverage else 0
 
 
 if __name__ == "__main__":

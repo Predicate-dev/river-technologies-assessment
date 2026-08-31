@@ -19,11 +19,11 @@
   have eaten the document budget. The audit trail CSV carries everything a
   reviewer needs — every candidate, winners and rejects, with provenance and
   score inputs — and is the input a UI would render.
-- **Quarterly scheduling and coverage-regression alerting.** Named as the key
-  production mitigation in the technical doc and deliberately not built: it is
-  operational plumbing rather than an evidence problem, and the signal it watches
-  for (a metric that populated last quarter and stops) only becomes meaningful
-  once there is a prior quarter's run to compare against.
+- **Quarterly scheduling** (the cron half). The *detection* half was built --
+  `--compare-to` diffs a run against a previous quarter's coverage and exits
+  non-zero on lost coverage, so whatever scheduler the client already runs can
+  gate on it. Choosing and operating that scheduler is their infrastructure
+  decision, not an evidence problem.
 - **Interpolating the NAV trend onto a shared calendar grid.** Would have made a
   cleaner chart. Rejected because no calendar date exists on which all four
   filers report, so every interpolated point would be an observation no filer

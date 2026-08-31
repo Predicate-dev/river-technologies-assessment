@@ -33,6 +33,7 @@ Two files land in `output/`:
 | File | What it is |
 | --- | --- |
 | `benchmark_table.md` | The board table, in the layout the PMs already read, plus the conflict log and the reason for every blank cell. |
+| `apex_vs_peers.md` | Peer median, range and ordering per metric, plus Apex's delta and rank. Apex-versus-peer deltas are withheld until the basis of the client's own column is confirmed; peer-to-peer statistics do not depend on it and render today. |
 | `nav_trend.md` | NAV per share over the trailing window, on a common semi-annual footing with each fund's actual reporting dates labelled. |
 | `coverage_breakdown.md` | Every cell classified by who owns the gap: reported, ours to close, cadence-limited, blocked on a client decision, or structurally unavailable. |
 | `audit_trail.csv` | One row per candidate value the pipeline found — winners *and* rejects — with source tier, filing accession, in-document locator, verbatim excerpt, transforms applied, flags raised, and the confidence score inputs. |
@@ -44,6 +45,7 @@ python -m apexridge --funds GBDC KREF      # subset of the peer set
 python -m apexridge --anchor 2025-09-30    # a different reporting quarter
 python -m apexridge --offline              # cache only; fails rather than degrading silently
 python -m apexridge --nport-limit 16       # deeper N-PORT history (slower)
+python -m apexridge --compare-to prior/coverage_breakdown.csv   # regression vs a previous run
 python -m apexridge -v                     # log extraction and suppression decisions
 python -m apexridge --help
 ```
@@ -52,7 +54,7 @@ python -m apexridge --help
 
 ```bash
 pip install -r requirements-dev.txt
-python -m pytest tests/ -q          # 69 tests
+python -m pytest tests/ -q          # 89 tests
 ```
 
 Tests cover the data-correctness path and the failure modes drawn from real
@@ -142,6 +144,18 @@ NOTES/               decisions, open client questions, descoped items
 docs/                technical approach, solution brief, board format reference
 ```
 
+## Watching for silent failure
+
+The pipeline's failure mode is quiet by design: if a filer changes wording and a
+pattern stops matching, the cell blanks with a reason rather than reporting a
+wrong number. That is correct, and it is exactly why nobody notices.
+
+`--compare-to` diffs the current run against a previous quarter's
+`coverage_breakdown.csv` and reports what populated then and blanks now,
+distinguishing an extraction that stopped matching from a figure that merely
+aged out or is held on an open question. It exits non-zero when coverage is
+lost, so a scheduled run can gate on it.
+
 ## Notes on the LLM tier
 
 Built, and currently **off**: the deterministic tiers cover every fee the system
@@ -160,7 +174,7 @@ deterministic and means a demo cannot be broken by a network hiccup.
 
 ## Current status
 
-Prototype. 69 tests passing, running against live EDGAR at the Q4 2025 anchor.
+Prototype. 89 tests passing, running against live EDGAR at the Q4 2025 anchor.
 26 of 36 competitor cells populate; the rest blank with a stated reason, broken
 down cell by cell in `output/coverage_breakdown.md`. Known gaps and their causes
 — some ours, some structural to the filers, and some possibly outside EDGAR
