@@ -59,6 +59,7 @@ python -m apexridge --peers peers.json         # reuse a saved peer set
 ```bash
 python -m apexridge --funds GBDC KREF      # subset of the peer set
 python -m apexridge --anchor 2025-09-30    # a different reporting quarter
+python -m apexridge --out reports/         # write outputs somewhere other than output/
 python -m apexridge --offline              # cache only; fails rather than degrading silently
 python -m apexridge --nport-limit 16       # deeper N-PORT history (slower)
 python -m apexridge --compare-to prior/coverage_breakdown.csv   # regression vs a previous run

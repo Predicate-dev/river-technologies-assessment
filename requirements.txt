@@ -13,4 +13,3 @@ python-docx>=1.1        # Word output for the IC committee's board deck
 # with no API key it falls back to deterministic table parsing and labels the
 # affected values accordingly.
 anthropic>=0.40         # LLM extraction from footnotes/prose
-python-dotenv>=1.0      # loads ANTHROPIC_API_KEY / SEC_USER_AGENT from .env
