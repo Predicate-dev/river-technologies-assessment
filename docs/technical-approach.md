@@ -1,9 +1,10 @@
 # Technical approach — competitor benchmarking pipeline
 
 **Audience:** Apex Ridge technical counterpart.
-**Status:** prototype, built against live SEC EDGAR. 45 tests passing.
-`python -m apexridge` runs the full pipeline and writes the board table and
-audit trail to `output/`.
+**Status:** prototype, built against live SEC EDGAR. 59 tests passing.
+`python -m apexridge` runs the full pipeline and writes the board table, the
+coverage breakdown, the NAV trend and the audit trail to `output/`.
+25 of 36 competitor cells populate at the Q4 2025 anchor.
 **Reporting anchor:** Q4 2025 (period end 2025-12-31).
 
 ---
@@ -47,6 +48,7 @@ bare number:
 | `sources/xbrl.py`, `xbrl_metrics.py` | GBDC, KREF | XBRL company facts (189 / 283 `us-gaap` tags) |
 | `sources/nport.py` | CCLFX, TAKIX | N-PORT XML — net assets, borrowings, monthly returns |
 | `sources/narrative.py` | all four | Fee tables, anchored prose patterns, optional LLM |
+| `sources/highlights.py` | CCLFX, TAKIX | N-CSR/N-CSRS financial highlights — the only class-level source |
 
 The split is forced by the filers, not chosen. GBDC and KREF file 10-K/10-Q with
 rich XBRL. CCLFX and TAKIX are interval funds: no 10-K, and between them only
@@ -84,6 +86,13 @@ should be downgraded.
 output — the render unit raises rather than emit one.
 
 ## 4. Validation strategy and the confidence model
+
+**We asked for external validation and could not have it.** A prior-quarter
+manual pack, to reconcile against, was declined on compliance grounds — live
+fund data does not leave the firm without a sign-off that has not happened. So
+nothing in this system has been checked against an external reference, and this
+section should be read with that stated plainly rather than implied. Validation
+rests entirely on internal cross-source agreement and on reasoning we can show.
 
 No answer key means no accuracy measurement. What we can observe is the
 extraction itself, so the score is built only from that:
@@ -190,13 +199,45 @@ adapter which forgets to anchor produces a visible alignment exclusion rather
 than a peer column silently reporting six months of newer information than the
 client's own.
 
+## 5a. If source scope expands beyond EDGAR
+
+Fund websites, factsheets and investor-relations pages are the likely direction,
+since some cells in the manual pack appear to have been sourced that way. The
+recommended treatment, if that happens: a **distinct and lower confidence tier,
+explicitly labelled, never blended into a filing-sourced figure**. A filing
+carries an accession number, an immutable version and a retrievable audit trail;
+a web page carries none of those, can change without notice, and cannot be
+cited to a compliance reviewer years later. Mixing the two silently would
+undermine the one property that makes this output defensible. The tier machinery
+already supports this — it is a new `SourceTier` value and a penalty, not a
+redesign.
+
 ## 6. Known limitations
 
-- **14 of 36 competitor cells populate.** The remainder blank with a stated
-  reason. Roughly half are structural (a filer does not publish the metric, or
-  publishes it only at a cadence the six-month rule excludes) and half are
-  coverage we have not yet built — chiefly class-level figures for the two
-  interval funds.
+- **25 of 36 competitor cells populate**, broken down cell by cell in
+  `output/coverage_breakdown.md` by who owns each gap. Three remain ours
+  (TAKIX's incentive fee and hurdle, CCLFX's hurdle), three are cadence-limited,
+  one is blocked on your leverage definition, and four are structural.
+- **The "ours" classification assumes an EDGAR source exists.** You have since
+  confirmed that analysts sometimes source from fund websites, investor-relations
+  pages and press releases. Any cell filled that way in the manual pack has no
+  EDGAR source and cannot be closed within the current scope. Until the
+  cell-by-cell source review comes back, treat those as *not yet ruled out*
+  rather than as a committed backlog. We have deliberately not put a projected
+  coverage number in this document.
+- **CCLFX's cadence gap is live.** Its March fiscal year-end puts the latest
+  annual report 275 days behind a Q4 2025 anchor, past the six-month line, so
+  three of its cells blank on your own rule rather than on any extraction
+  failure. This is the case for the labelled fund-level fallback currently with
+  your CIO.
+- **The NAV trend is semi-annual, not quarterly.** Class-level NAV for the
+  interval funds exists only in their annual and semi-annual reports; N-PORT
+  carries no per-share field. Per your ruling the whole set is plotted
+  semi-annually. Note that the *dates* still differ by fiscal calendar and are
+  labelled per point — there is no calendar date on which all four report, and
+  interpolating onto a shared grid would invent observations no filer published.
+- **GBDC and KREF publish NAV quarterly, not monthly.** A drill-down footnote
+  should say quarterly; no fund in this set publishes a monthly per-share NAV.
 - **N-PORT depth is capped at 8 filings** (~8MB each). The 3Y/5Y interval-fund
   windows are therefore limited by *our* download cap, not by data availability
   — the filings exist at EDGAR today. The appendix states this explicitly so the

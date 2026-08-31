@@ -33,6 +33,7 @@ Two files land in `output/`:
 | File | What it is |
 | --- | --- |
 | `benchmark_table.md` | The board table, in the layout the PMs already read, plus the conflict log and the reason for every blank cell. |
+| `nav_trend.md` | NAV per share over the trailing window, on a common semi-annual footing with each fund's actual reporting dates labelled. |
 | `coverage_breakdown.md` | Every cell classified by who owns the gap: reported, ours to close, cadence-limited, blocked on a client decision, or structurally unavailable. |
 | `audit_trail.csv` | One row per candidate value the pipeline found — winners *and* rejects — with source tier, filing accession, in-document locator, verbatim excerpt, transforms applied, flags raised, and the confidence score inputs. |
 
@@ -51,7 +52,7 @@ python -m apexridge --help
 
 ```bash
 pip install -r requirements-dev.txt
-python -m pytest tests/ -q          # 45 tests
+python -m pytest tests/ -q          # 59 tests
 ```
 
 Tests cover the data-correctness path and the failure modes drawn from real
@@ -130,10 +131,13 @@ apexridge/
     xbrl.py          XBRL company-facts index
     xbrl_metrics.py  metric extractors for the 10-K/10-Q filers
     nport.py         N-PORT adapter for the interval funds
+    highlights.py    N-CSR financial highlights — class-level data
     narrative.py     fee tables, prose patterns, optional LLM tier
   render/
     cells.py         typed cells; suppression → presentation mapping
     table.py         board table and audit trail
+    coverage.py      cell-by-cell gap ownership
+    trend.py         NAV trend on a semi-annual footing
 NOTES/               decisions, open client questions, descoped items
 docs/                technical approach, solution brief, board format reference
 ```
@@ -156,8 +160,8 @@ deterministic and means a demo cannot be broken by a network hiccup.
 
 ## Current status
 
-Prototype. 45 tests passing, running against live EDGAR at the Q4 2025 anchor.
-18 of 36 competitor cells populate; the rest blank with a stated reason, broken
+Prototype. 59 tests passing, running against live EDGAR at the Q4 2025 anchor.
+25 of 36 competitor cells populate; the rest blank with a stated reason, broken
 down cell by cell in `output/coverage_breakdown.md`. Known gaps and their causes
 — some ours, some structural to the filers, and some possibly outside EDGAR
 entirely — are in
