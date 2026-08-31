@@ -1,303 +1,175 @@
 # Technical approach — competitor benchmarking pipeline
 
-**Audience:** Apex Ridge technical counterpart.
-**Status:** prototype, built against live SEC EDGAR. 59 tests passing.
-`python -m apexridge` runs the full pipeline and writes the board table, the
-coverage breakdown, the NAV trend and the audit trail to `output/`.
-25 of 36 competitor cells populate at the Q4 2025 anchor.
-**Reporting anchor:** Q4 2025 (period end 2025-12-31).
+**Audience:** Apex Ridge technical counterpart
+**Status:** prototype against live SEC EDGAR · 59 tests · 25 of 36 competitor cells populate at the Q4 2025 anchor
 
 ---
 
-## 1. What the system does
-
-Four competitor funds, nine metrics, one board-format table plus an audit trail.
-Every rendered value carries where it came from and how much evidence stands
-behind it; every blank carries why it is blank.
-
-The design constraint that shaped everything: **there is no answer key.** The
-manual process being replaced was your only source for these numbers, so the
-system cannot be validated against a known-correct output. Confidence therefore
-cannot be an accuracy measurement. It has to be an auditable statement of the
-evidence behind each value — which is what section 4 describes.
-
-## 2. Architecture and data flow
+## 1. Architecture
 
 ```
-EDGAR (live)  ──►  source adapters  ──►  candidates  ──►  eligibility filter
-                                                              │
-                        reconciliation ◄─────────────────────┘
-                              │
-              ┌───────────────┴───────────────┐
-        resolved value                  suppression
-        + confidence + provenance       + typed reason
-                              │
-                          render ──► board table + audit appendix
+EDGAR (live) ─► source adapters ─► candidates ─► eligibility filter
+                                                       │
+                     reconciliation ◄─────────────────┘
+                           │
+             ┌─────────────┴─────────────┐
+       resolved value              suppression
+       + confidence + provenance   + typed reason
+                           │
+                       render ─► board table · coverage · NAV trend · audit trail
 ```
 
-**`edgar.py`** — rate-limited (8 req/s against SEC's 10/s ceiling), descriptive
-User-Agent, disk-cached by URL. Caching is not an optimisation: it makes runs
-deterministic and means a live demo cannot be broken by a network hiccup or a
-rate-limit trip.
+`edgar.py` is rate-limited to 8 req/s (SEC's ceiling is 10), sends a descriptive
+User-Agent, and caches every response to disk. Caching makes runs deterministic
+and means a demo cannot be broken by a network hiccup.
 
-**Source adapters** each emit *candidates* — a value plus its evidence — never a
-bare number:
+Adapters emit **candidates** — a value plus its evidence — never bare numbers.
+The split is forced by the filers, not chosen:
 
 | Adapter | Funds | Mechanism |
 | --- | --- | --- |
-| `sources/xbrl.py`, `xbrl_metrics.py` | GBDC, KREF | XBRL company facts (189 / 283 `us-gaap` tags) |
-| `sources/nport.py` | CCLFX, TAKIX | N-PORT XML — net assets, borrowings, monthly returns |
-| `sources/narrative.py` | all four | Fee tables, anchored prose patterns, optional LLM |
-| `sources/highlights.py` | CCLFX, TAKIX | N-CSR/N-CSRS financial highlights — the only class-level source |
+| `xbrl.py`, `xbrl_metrics.py` | GBDC, KREF | XBRL company facts (189 / 283 `us-gaap` tags) |
+| `nport.py` | CCLFX, TAKIX | N-PORT XML: net assets, borrowings, monthly returns |
+| `highlights.py` | CCLFX, TAKIX | N-CSR/N-CSRS financial highlights — the only class-level source |
+| `narrative.py` | all four | Fee tables, anchored prose patterns, optional LLM |
 
-The split is forced by the filers, not chosen. GBDC and KREF file 10-K/10-Q with
-rich XBRL. CCLFX and TAKIX are interval funds: no 10-K, and between them only
-eleven `cef:` XBRL tags, all senior-securities stress figures. For those two,
-N-PORT is the only machine-readable source and fee terms exist only in prose.
+GBDC and KREF file 10-K/10-Q with rich XBRL. The interval funds file no 10-K and
+have eleven usable `cef:` tags between them, so their fee terms exist only in
+prose and their class-level figures only in the annual and semi-annual reports.
 
-**`core/periods.py`** reconstructs a non-overlapping distribution ledger by
-differencing fiscal-year-to-date cumulatives. **`core/temporal.py`** owns the
-reporting anchor and eligibility. **`core/reconcile.py`** resolves candidates and
-is the only path that can blank a value. **`core/confidence.py`** scores.
+`core/periods.py` rebuilds a non-overlapping distribution ledger by differencing
+fiscal-year-to-date cumulatives. `core/temporal.py` owns the reporting anchor,
+eligibility and staleness. `core/reconcile.py` is the only path that can blank a
+value. `core/confidence.py` scores.
 
-## 3. Key decisions
+## 2. Key decisions
 
-**Structured-first, LLM last.** XBRL and N-PORT before any model. The LLM tier
-is optional and currently unused — the deterministic tiers cover every fee the
-system extracts, so `git clone && run` works with no API key. This also means the
-compliance answer on third-party model use does not block the prototype.
+**Structured-first, LLM last.** The LLM tier is built but unused — the
+deterministic tiers cover every fee extracted — so the pipeline runs with no API
+key and the compliance question does not block the prototype.
 
-**Every metric carries a `basis`, not just a value.** Forced by KREF: its
-management fee is struck on stockholders' equity, the interval funds' on managed
-or net assets; its "NAV per share" is GAAP book value, not an administrator-struck
-NAV. That gap cannot be expressed as a footnote bolted on at render time. It has
-since paid for itself twice more — the leverage regulatory/economic question and
-the unconfirmed basis of the Apex column are both render-time switches rather
-than rebuilds *because* basis is in the schema.
+**Every metric carries a `basis`, not just a value.** Forced by KREF, whose
+management fee is struck on stockholders' equity and whose "NAV per share" is
+GAAP book value. That gap cannot be a footnote bolted on at render time. It has
+paid for itself repeatedly since: the leverage question and the unconfirmed basis
+of the Apex column are both render-time switches *because* basis is in the schema.
 
-**Multiple candidates per metric, deliberately.** Leverage is emitted on three
-constructions. The third — `(assets − equity) / equity` — exists purely as an
-internal-consistency probe against the second; if they disagree, the filer's
-balance-sheet tagging is inconsistent and every derived value for that fund
-should be downgraded.
+**Multiple candidates per metric, deliberately.** Leverage is built three ways;
+the third exists purely as a consistency probe against the second. Disagreement
+between them means the filer's balance-sheet tagging is inconsistent and every
+derived value for that fund should be downgraded.
 
-**Blanks are typed.** `NOT_APPLICABLE`, `NOT_YET_FILED`, `STALE`,
-`BASIS_DISQUALIFIED`, `SUPPRESSED`. A bare blank is unrepresentable in the
-output — the render unit raises rather than emit one.
+**Blanks are typed** — `NOT_APPLICABLE`, `NOT_YET_FILED`, `STALE`,
+`BASIS_DISQUALIFIED`, `SUPPRESSED`. A bare blank raises rather than renders.
 
-## 4. Validation strategy and the confidence model
+## 3. Validation and the confidence model
 
 **We asked for external validation and could not have it.** A prior-quarter
-manual pack, to reconcile against, was declined on compliance grounds — live
-fund data does not leave the firm without a sign-off that has not happened. So
-nothing in this system has been checked against an external reference, and this
-section should be read with that stated plainly rather than implied. Validation
-rests entirely on internal cross-source agreement and on reasoning we can show.
+manual pack to reconcile against was declined on compliance grounds. Nothing here
+has been checked against an external reference. Validation rests entirely on
+internal cross-source agreement and on reasoning we can show, and this document
+would rather say so than let confidence grades imply otherwise.
 
-No answer key means no accuracy measurement. What we can observe is the
-extraction itself, so the score is built only from that:
+So the score is built only from what we can observe about the extraction:
 
 ```
 score = tier × agreement × freshness × ∏(named penalties)
 ```
 
-- **tier** — how the number was obtained: a typed XBRL fact (0.95), an N-PORT
-  schema field (0.92), a derived calculation (0.75), a parsed table cell (0.72),
-  an anchored prose pattern (0.66), a model reading a footnote (0.55). This
-  scores the *mechanism*, not the filer's judgment. Section 5 shows why that
-  distinction matters.
-- **agreement** — the only factor that can *raise* a score, and the closest thing
-  to ground truth available. Independently-constructed values for the same thing
-  on the same basis either converge or they do not. Corroborated ×1.10, single
-  source ×0.90, conflicting ×0.70.
-- **freshness** — age of the underlying period against the anchor.
-- **penalties** — named, published multipliers per observed problem. An
-  unrecognised flag takes a default discount, so a new flag can never silently
-  pass at full confidence.
+- **tier** — the mechanism: typed XBRL fact (0.95), N-PORT schema field (0.92),
+  derived calculation (0.75), parsed table (0.72), prose pattern (0.66), model
+  reading a footnote (0.55). This scores the *mechanism*, not the filer.
+- **agreement** — the only factor that can raise a score, and the closest thing
+  to ground truth available. Corroborated ×1.10, single source ×0.90,
+  conflicting ×0.70.
+- **freshness** — age of the period against the anchor.
+- **penalties** — named, published multipliers. An unrecognised flag takes a
+  default discount, so a new flag can never silently pass at full confidence.
 
-Every input is recorded on the resolved value, so a reviewer audits the score
-rather than trusting it. **Nothing anywhere asks a model how confident it is.**
+Every input is recorded on the value, so a reviewer audits the score rather than
+trusting it. **Nothing asks a model how confident it is.**
 
-Four reconciliations run in practice:
+Reconciliations that actually run: cross-mechanism (GBDC NAV — XBRL 14.84 vs
+equity÷shares, agreeing to 0.02%); cross-document (CCLFX's fee in both the
+expense table and prose); internal consistency (liabilities÷equity vs
+(assets−equity)÷equity); and bound-checking (TAKIX's seven unlabelled class
+series bound any narrative figure, retained internally, never rendered as a
+range).
 
-1. **Cross-mechanism.** GBDC NAV/share: XBRL reports 14.25; equity ÷ shares
-   outstanding gives 14.2476. Independent constructions agreeing to 0.02% —
-   the only value in the current run scoring High.
-2. **Cross-document.** CCLFX's management fee appears in the prospectus expense
-   table *and* in prose ("at an annual rate of 1.00%"). Two mechanisms, one
-   answer.
-3. **Internal consistency.** Total liabilities ÷ equity against
-   (assets − equity) ÷ equity, per filer, per period.
-4. **Bound-checking.** TAKIX publishes seven unlabelled share-class return
-   series; their spread (1Y: 3.19%–4.07%) bounds any narrative-sourced
-   institutional figure. Retained internally and in the appendix — never
-   rendered as a range, per your ruling.
+**Resolution is by weight of evidence, not tier.** Same-basis candidates cluster
+by agreement; the cluster with most *independent* extractions wins, then fewest
+flags, then tier, then recency. Independence is checked on (mechanism,
+accession, transform), so one table matched through two anchors counts once.
 
-**Resolution is by weight of evidence, not source tier.** Same-basis candidates
-are clustered by agreement; the cluster with the most *independent* extractions
-wins, then fewest flags, then tier, then recency. Independence is checked on
-(mechanism, accession, transform) so the same table matched through two anchor
-phrases counts once and cannot vote itself into the deck.
+Below 0.40 the value is withheld and the blank states why.
 
-**Below 0.40, the value is withheld and the blank states why.** This follows
-directly from the asymmetric-loss rule: a false-confident value costs more than
-a gap.
+## 4. Where sources disagreed
 
-## 5. Where sources disagreed, and what we did
+**GBDC's XBRL reports its management fee as 0.021%.** Valid XBRL, correctly
+tagged — from a 424B2 notes prospectus, not the fund's fee table. Highest tier,
+wrong number, suppressed at 0.13. *This is why tier alone cannot be the model.*
 
-**GBDC's XBRL says its management fee is 0.0213%.** Valid XBRL, correctly tagged
-— from a 424B2 notes prospectus rather than the fund's own fee table. Highest
-source tier, wrong number. It is emitted as a candidate, flagged for document
-context and implausibility, and suppressed at 0.13 confidence. The true rate,
-1.0%, comes from the 10-K. **This is the concrete proof that source tier alone
-cannot be the confidence model.**
+**GBDC's 10-K states old and current rates in one sentence** — "reduced from
+1.375% to 1.0%", "from 20.0% to 15.0%". Both are emitted; reconciliation resolves
+by effective date and logs the conflict. This is the exact misread that reached
+your board. Note both incentive tiers are 15.0%; 20% is the prior rate, not a
+second tier.
 
-**GBDC's 10-K states both the old and current rates in one sentence** — "the
-base management fee rate was reduced from 1.375% to 1.0%", and "incentive fee
-rates were reduced from 20.0% to 15.0%". Both figures are emitted as candidates
-on the same basis; reconciliation resolves to the current rate and logs the
-conflict with its rationale ("kept 1.0: agreed on by 3 independent extractions
-vs 1.375 by 1"). This is the exact shape of the misread that reached your board
-last year, and it is now a named, tested case rather than a matter of analyst
-attention.
+**TAKIX's prospectus quotes a management fee retired in 2020**, paragraphs from
+the current one. Same hazard, different grammar.
 
-**A missing distribution quarter understated GBDC's 1-year return by 265bp.**
-BDCs never tag fiscal Q4 as a standalone period — it exists only inside the 10-K
-annual total. Filtering to 90-day facts silently drops it (2.05%); differencing
-the cumulative recovers it (4.71%). This is `core/periods.py`, and it is the
-most heavily tested code in the repository because it is the place a silent
-arithmetic error would reach a board deck.
+**A distribution quarter BDCs never tag separately** understated GBDC's 1Y return
+by 265bp until reconstructed.
 
-**TAKIX reports zero borrowings while carrying $2.2bn of liabilities on $4.47bn
-of net assets.** Gross-debt leverage computes to 0.00 — arithmetically correct,
-informationally empty. Rather than render `0.00x, Low`, the cell is
-*disqualified*: the elected construction did not measure the metric. Critically,
-it does **not** fall through to the total-liabilities basis (0.4939), because
-doing so would silently answer the regulatory-vs-economic question currently
-with your CIO by picking the economic reading. Both readings are named in the
-appendix.
+**KREF's management fee is quoted quarterly** on adjusted equity — 0.375%, which
+is 1.50% a year against peers quoting ~1.0%. Annualized and basis-marked.
 
-**GBDC's 5-year return is blank.** Its NAV history is quarterly only back to
-2021-09-30 — 4.75 years. A 4.75-year window is not a 5-year return, so the cell
-states the reason and the coverage it *could* have supported.
+**TAKIX reports zero borrowings against $2.2bn of liabilities.** Computable,
+withheld: falling through to the total-liabilities basis would silently answer
+the regulatory-vs-economic question now with your CIO.
 
-**KREF's distribution yield differs by basis.** A distribution cut puts the
-run-rate and trailing-twelve-month readings materially apart. Both render, per
-your ruling that a cut of that size belongs at the cell rather than in a
-footnote.
+## 5. Limitations
 
-**TAKIX's prospectus states a management fee retired in 2020.** "Prior to
-April 1, 2020, the Management Fee was ... 1.50%" sits a few paragraphs from the
-current 1.00%. The same hazard as GBDC's "reduced from" wording in a different
-grammatical form, and it resolved to the wrong rate until historical-clause
-detection was added. Both forms are now tested against the filers' actual text.
+- **25 of 36 cells populate**, classified in `output/coverage_breakdown.md` by
+  who owns each gap: 3 ours, 3 cadence-limited, 1 client-blocked, 4 structural.
+- **"Ours" assumes an EDGAR source exists.** Analysts also source from fund
+  websites and IR pages; those cells cannot be closed within scope. Treat the
+  backlog as *not yet ruled out*, and read no projected coverage number off it.
+- **CCLFX's cadence gap is live.** Its March year-end puts the annual report 275
+  days behind a Q4 2025 anchor, past the six-month line, so three cells blank on
+  your rule rather than any failure of ours. Recurs annually.
+- **The NAV trend is semi-annual.** Class-level NAV exists only in the annual and
+  semi-annual reports. Dates still differ by fiscal calendar and are labelled per
+  point; interpolating to a shared grid would invent observations.
+- **GBDC and KREF publish NAV quarterly, not monthly.** No fund here publishes a
+  monthly per-share NAV.
 
-**Anchoring is enforced, not assumed.** Every adapter selects as of the
-reporting quarter, and a separate eligibility filter re-checks the result. The
-filter currently drops nothing — which is the point: it exists so that an
-adapter which forgets to anchor produces a visible alignment exclusion rather
-than a peer column silently reporting six months of newer information than the
-client's own.
-
-## 5a. If source scope expands beyond EDGAR
-
-Fund websites, factsheets and investor-relations pages are the likely direction,
-since some cells in the manual pack appear to have been sourced that way. The
-recommended treatment, if that happens: a **distinct and lower confidence tier,
-explicitly labelled, never blended into a filing-sourced figure**. A filing
-carries an accession number, an immutable version and a retrievable audit trail;
-a web page carries none of those, can change without notice, and cannot be
-cited to a compliance reviewer years later. Mixing the two silently would
-undermine the one property that makes this output defensible. The tier machinery
-already supports this — it is a new `SourceTier` value and a penalty, not a
-redesign.
-
-## 6. Known limitations
-
-- **25 of 36 competitor cells populate**, broken down cell by cell in
-  `output/coverage_breakdown.md` by who owns each gap. Three remain ours
-  (TAKIX's incentive fee and hurdle, CCLFX's hurdle), three are cadence-limited,
-  one is blocked on your leverage definition, and four are structural.
-- **The "ours" classification assumes an EDGAR source exists.** You have since
-  confirmed that analysts sometimes source from fund websites, investor-relations
-  pages and press releases. Any cell filled that way in the manual pack has no
-  EDGAR source and cannot be closed within the current scope. Until the
-  cell-by-cell source review comes back, treat those as *not yet ruled out*
-  rather than as a committed backlog. We have deliberately not put a projected
-  coverage number in this document.
-- **CCLFX's cadence gap is live.** Its March fiscal year-end puts the latest
-  annual report 275 days behind a Q4 2025 anchor, past the six-month line, so
-  three of its cells blank on your own rule rather than on any extraction
-  failure. This is the case for the labelled fund-level fallback currently with
-  your CIO.
-- **The NAV trend is semi-annual, not quarterly.** Class-level NAV for the
-  interval funds exists only in their annual and semi-annual reports; N-PORT
-  carries no per-share field. Per your ruling the whole set is plotted
-  semi-annually. Note that the *dates* still differ by fiscal calendar and are
-  labelled per point — there is no calendar date on which all four report, and
-  interpolating onto a shared grid would invent observations no filer published.
-- **GBDC and KREF publish NAV quarterly, not monthly.** A drill-down footnote
-  should say quarterly; no fund in this set publishes a monthly per-share NAV.
-- **N-PORT depth is capped at 8 filings** (~8MB each). The 3Y/5Y interval-fund
-  windows are therefore limited by *our* download cap, not by data availability
-  — the filings exist at EDGAR today. The appendix states this explicitly so the
-  limit is never mistaken for a filer gap.
-- **Institutional share-class returns are not yet extracted.** Class-level data
-  exists only at semi-annual/annual cadence in N-CSR financial-highlights tables.
-  Confirmed reachable deterministically; not yet built.
-- **CCLFX has a structural cadence gap.** Its March fiscal year-end means that
-  for part of each year no institutional-class figure is under six months old.
-  Not a bug — a consequence of your six-month rule meeting the filer's calendar.
-- **No cross-filer identity resolution.** The fund registry is hand-curated and
-  verified against EDGAR. Adding a fund within a handled entity type is a config
-  entry; a new entity type needs a new adapter.
-
-## 7. Production risks and mitigations
+## 6. Production risks
 
 | Risk | Mitigation |
 | --- | --- |
-| **Filers change wording; prose patterns silently stop matching.** Highest-likelihood failure. | Patterns are anchored and per-metric, so a miss produces a blank with a reason, never a wrong number. Recommend a per-metric coverage alert: if a value extracted last quarter is absent this quarter, that is a signal, not a gap. |
-| **A filer re-tags XBRL, or tags a fee table from the wrong document.** Already observed. | Cross-mechanism agreement plus plausibility ranges; the value is flagged and suppressed rather than trusted on tier. |
-| **EDGAR rate-limits or changes URL structure.** | Self-throttled below the published ceiling with backoff; all access is behind one client class. |
-| **Silent arithmetic drift in derived metrics.** | Day-count annualization with explicit window tolerances; a window that does not match its label is suppressed, not rounded. Ledger arithmetic is unit-tested against the real failure modes. |
-| **Definitional answers arrive after build.** | The `basis` field means definitional questions are render-time switches. Of five open client items, four are config-level; only the leverage definition implies extraction work. |
-| **Provenance rots.** A citation must resolve years later for compliance. | Every value carries accession number, form type, period, document URL and an in-document locator (XBRL tag, XPath, or character offset), plus a verbatim excerpt. |
+| **Filers change wording; prose patterns stop matching.** Most likely failure. | A miss produces a blank with a reason, never a wrong number. Add a per-metric alert: a value that populated last quarter and stops is the signal. |
+| **A filer re-tags XBRL or tags the wrong document.** Already observed. | Cross-mechanism agreement plus plausibility ranges; flagged and suppressed, not trusted on tier. |
+| **Silent arithmetic drift.** | Day-count annualization with window tolerances; a window that does not match its label is suppressed, not rounded. Ledger arithmetic is unit-tested against real failure modes. |
+| **Source scope expands beyond EDGAR.** Likely. | Adopt web sources only as a distinct, visibly lower tier. A filing has an accession number, an immutable version and a retrievable audit trail; a web page has none. Never blend silently — that would undermine the one property making this defensible. It is a new tier value and a penalty, not a redesign. |
+| **Provenance rots.** | Every value carries accession, form, period, URL, in-document locator and a verbatim excerpt. |
 
-## 8. Provenance in the LLM tier
+## 7. The LLM tier
 
-The LLM tier is built but unused pending your compliance answer. Its guard is
-worth stating because it is the mechanism that makes model extraction defensible
-at all: the model must return the value **and** a verbatim supporting quote, and
-the quote is then checked to be literally present in the source document. An
-answer whose quote cannot be found is **discarded, not downgraded** — an
-unverifiable extraction is the signature of a fabrication, and no confidence
-discount is an adequate substitute for dropping it. Two passes run independently;
-disagreement flags the value rather than silently taking one.
+Built, unused, pending compliance. Its guard is what makes model extraction
+defensible: the model must return a value **and** a verbatim quote, and the quote
+is checked to be literally present in the source. An answer whose quote cannot be
+found is **discarded, not downgraded** — no confidence discount substitutes for
+dropping a probable fabrication. Two passes run; disagreement flags the value.
 
 ---
 
-## Appendix — which decisions are yours and which are ours
-
-Recorded because the distinction matters for anything you inherit.
-
-**Confirmed by Lara (Window 1):** blank-with-stated-reason over a filled cell on
-the wrong definition; the six-month staleness line; the anchor running from the
-reporting quarter rather than the run date; institutional share class as a hard
-requirement for CCLFX/TAKIX; basis divergence rendered at the cell rather than in
-a footnote; KREF retained on a row-level mapping, provisionally.
-
-**Consultant defaults, not yet ratified:** the confidence weightings and the 0.40
-suppression floor; preferring gross-debt leverage as the primary basis; run-rate
-as the primary distribution-yield basis; the N-PORT depth cap; the tier ordering
-itself. Each is a single constant and each is documented in `NOTES/decisions.md`.
-
-**Open with your CIO:** the leverage definition (regulatory vs. economic, and
-whether KREF's non-recourse securitisation and repo are in scope); the peer-list
-selection criteria; whether a labelled fund-level figure is an acceptable
-fallback during CCLFX's cadence gap; compliance approval for the LLM tier.
-
-**Unconfirmed and blocking derived comparisons:** the basis of Apex Ridge's own
-column. Share class and fee treatment are unknown, so the column renders with
-basis `UNCONFIRMED` and peer-minus-Apex deltas are suppressed. A delta between
-two numbers of unknown basis is precisely the confidently-wrong number this
-system exists to prevent.
+**Whose decisions these are.** Confirmed by Lara: blank-over-guess; the six-month
+staleness line; the anchor as the reporting quarter; institutional share class
+for the interval funds; basis rendered at the cell; the amendment-based fee clock;
+semi-annual NAV footing; KREF retained on a row-level mapping. Consultant
+defaults, unratified: confidence weightings, the 0.40 floor, gross-debt leverage
+as primary, run-rate as the primary yield basis, the N-PORT depth cap. Open with
+your CIO: the leverage definition, peer-list criteria, the CCLFX fallback, LLM
+compliance. **Unconfirmed and blocking:** the basis of Apex Ridge's own column —
+share class and fee treatment — so its deltas are suppressed.

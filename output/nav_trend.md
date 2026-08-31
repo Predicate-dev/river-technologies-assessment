@@ -9,9 +9,6 @@ Semi-annual cadence, trailing 8 quarters to 2025-12-31.
 **Drill-down:** GBDC and KREF publish NAV *quarterly* in their 10-Qs, so a finer series is available for those two on request. No fund in the set publishes a monthly per-share NAV.
 
 - **Apex Ridge**: 2024-06-30 $25.04, 2024-12-31 $25.42, 2025-06-30 $25.73, 2025-12-31 $26.12
-- **CCLFX**: 2024-03-31 $10.55, 2025-03-31 $10.83, 2025-09-30 $10.77
-- **TAKIX**: 2023-12-31 $8.52, 2024-06-30 $8.58, 2024-12-31 $8.55, 2025-06-30 $8.41, 2025-12-31 $8.32
 - **GBDC**: 2024-03-31 $15.12, 2024-09-30 $15.19, 2025-03-31 $15.04, 2025-09-30 $14.97
-- **KREF** _(book value per share, not a fund NAV)_: 2023-12-31 $20.27, 2024-06-30 $19.99, 2024-12-31 $19.57, 2025-06-30 $18.88, 2025-12-31 $18.22
 
 KREF is a mortgage REIT: its per-share figure is GAAP book value, not an administrator-struck NAV, and the two are not directly comparable.
