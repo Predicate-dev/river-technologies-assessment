@@ -12,6 +12,7 @@ CCLFX,portfolio_turnover_pct,stale_beyond_limit,CADENCE,figure exists but predat
 CCLFX,non_accrual_rate_fv_pct,no_candidate,OURS,"no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below",
 CCLFX,non_accrual_rate_cost_pct,no_candidate,OURS,"no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below",
 CCLFX,weighted_avg_spread_bps,no_candidate,OURS,"no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below",
+CCLFX,total_annual_expenses_pct,FILLED,-,3.27 pct,Medium
 TAKIX,net_return_1y_pct,FILLED,-,6.27 pct,Medium
 TAKIX,net_return_3y_pct,FILLED,-,10.36 pct,Medium
 TAKIX,net_return_5y_pct,FILLED,-,8.213 pct,Medium
@@ -25,6 +26,7 @@ TAKIX,portfolio_turnover_pct,FILLED,-,13 pct,Low
 TAKIX,non_accrual_rate_fv_pct,no_candidate,OURS,"no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below",
 TAKIX,non_accrual_rate_cost_pct,no_candidate,OURS,"no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below",
 TAKIX,weighted_avg_spread_bps,no_candidate,OURS,"no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below",
+TAKIX,total_annual_expenses_pct,no_candidate,OURS,"no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below",
 GBDC,net_return_1y_pct,FILLED,-,8.723 pct,Low
 GBDC,net_return_3y_pct,FILLED,-,11.88 pct,Low
 GBDC,net_return_5y_pct,window_mismatch,STRUCTURAL,filer's tagged history does not span the labelled window,
@@ -38,6 +40,7 @@ GBDC,portfolio_turnover_pct,no_candidate,OURS,"no EDGAR source located; either e
 GBDC,non_accrual_rate_fv_pct,FILLED,-,0.3 pct,Low
 GBDC,non_accrual_rate_cost_pct,FILLED,-,0.6 pct,Low
 GBDC,weighted_avg_spread_bps,no_candidate,OURS,"no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below",
+GBDC,total_annual_expenses_pct,FILLED,-,11.77 pct,Low
 KREF,net_return_1y_pct,not_applicable,STRUCTURAL,filer does not publish this concept; no extraction would fix it,
 KREF,net_return_3y_pct,not_applicable,STRUCTURAL,filer does not publish this concept; no extraction would fix it,
 KREF,net_return_5y_pct,not_applicable,STRUCTURAL,filer does not publish this concept; no extraction would fix it,
@@ -51,3 +54,4 @@ KREF,portfolio_turnover_pct,not_applicable,STRUCTURAL,filer does not publish thi
 KREF,non_accrual_rate_fv_pct,no_candidate,OURS,"no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below",
 KREF,non_accrual_rate_cost_pct,no_candidate,OURS,"no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below",
 KREF,weighted_avg_spread_bps,no_candidate,OURS,"no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below",
+KREF,total_annual_expenses_pct,no_candidate,OURS,"no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below",

@@ -14,7 +14,7 @@
     "entity_types": [
       "interval_fund"
     ],
-    "note": "Reported in the financial-highlights table of N-CSR/N-CSRS. No direction: high turnover is a strategy choice, not a quality."
+    "note": "Reported in the financial-highlights table of N-CSR/N-CSRS. No direction: high turnover is a strategy choice, not a quality. Declared with a row label only -- no regex needed."
   },
   {
     "key": "non_accrual_rate_fv_pct",
@@ -72,5 +72,24 @@
       "weighted average spread[^.]{0,80}?(?:of|was|is)\\s*([0-9]{1,2}\\.[0-9]{1,2})\\s*%"
     ],
     "note": "Stated inconsistently across filers -- some quote spread over benchmark, some all-in yield. Expect low coverage and check the excerpt before using."
+  },
+  {
+    "key": "total_annual_expenses_pct",
+    "label": "Total annual expenses",
+    "unit": "pct",
+    "direction": -1,
+    "sane_range": [
+      0.0,
+      15.0
+    ],
+    "match": {
+      "near": [
+        "Total Annual Expenses",
+        "Total annual expenses"
+      ],
+      "take": "first_percent",
+      "within": 120
+    },
+    "note": "Written with the regex-free 'match' form: name the phrase to look beside, say what to take, and bound how far to look. This is the form an analyst can author without engineering help."
   }
 ]

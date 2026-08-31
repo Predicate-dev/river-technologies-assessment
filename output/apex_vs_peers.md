@@ -21,6 +21,7 @@ Peer-to-peer statistics below are unaffected: they do not depend on Apex's basis
 | Non-accrual rate (% of portfolio, fair value) | 0.30% | 0.30%–0.30% | GBDC 0.30% _(ordered, not ranked)_ | — |
 | Non-accrual rate (% of portfolio, cost) | 0.60% | 0.60%–0.60% | GBDC 0.60% _(ordered, not ranked)_ | — |
 | Weighted average spread (bps) | — | — | no comparable peers | — |
+| Total annual expenses | 7.52% | 3.27%–11.77% | CCLFX 3.27%, GBDC 11.77% _(ordered, not ranked)_ | — |
 
 ## Excluded from the statistics — different basis
 
@@ -31,4 +32,4 @@ A figure on a different basis is not in the same distribution. These are reporte
 
 ## Not ranked
 
-A rank implies better and worse. For NAV per share and Leverage (D/E) and Portfolio turnover and Non-accrual rate (% of portfolio, fair value) and Non-accrual rate (% of portfolio, cost) and Weighted average spread (bps) that is not defined — a NAV per share is a share price, not a quality, and a leverage ratio is a risk posture, not a score. Both are shown in order without a ranking claim.
+A rank implies better and worse. For NAV per share and Leverage (D/E) and Portfolio turnover and Non-accrual rate (% of portfolio, fair value) and Non-accrual rate (% of portfolio, cost) and Weighted average spread (bps) and Total annual expenses that is not defined — a NAV per share is a share price, not a quality, and a leverage ratio is a risk posture, not a score. Both are shown in order without a ranking claim.

@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterable
@@ -39,6 +40,13 @@ class MetricSpec:
     # direction (a share price is not a quality; leverage is a posture).
     direction: int = 0
     sane_range: tuple[float, float] = (-1e9, 1e9)
+
+    # A regex-free way to declare a prose metric, for definitions written by
+    # someone who should not have to write a regex:
+    #   {"near": ["non-accrual"], "take": "first_percent", "within": 400}
+    # Compiled to a pattern at load time. `prose_patterns` remains available for
+    # cases this cannot express -- two figures in one sentence, for instance.
+    match: dict[str, Any] | None = None
 
     # Extraction hints. Empty means "this source cannot reach this metric".
     highlights_rows: tuple[str, ...] = ()  # regex, matched against a row label
@@ -85,6 +93,47 @@ BUILTIN: tuple[MetricSpec, ...] = (
 )
 
 
+# What `match.take` can ask for, and the regex each compiles to. Kept small on
+# purpose: a vocabulary a non-engineer can hold in their head beats one that can
+# express everything.
+_TAKE = {
+    "first_percent": r"([0-9]{1,3}(?:\.[0-9]{1,4})?)\s*%",
+    "first_number": r"([0-9][0-9,]*(?:\.[0-9]+)?)",
+    "first_basis_points": r"([0-9]{2,4})\s*basis points",
+}
+
+
+def compile_match(spec: dict[str, Any], key: str) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    """Turn a `match` block into (anchor phrases, regex patterns).
+
+    The generated pattern requires the value to appear *after* the anchor phrase
+    and within a bounded distance, so a metric cannot silently pick up a number
+    from an unrelated sentence that happens to share a window.
+    """
+    near = spec.get("near")
+    if not near:
+        raise MetricDefinitionError(
+            f"metric {key!r}: 'match' needs a 'near' list of phrases to look beside"
+        )
+    if isinstance(near, str):
+        near = [near]
+    take = spec.get("take", "first_percent")
+    if take not in _TAKE:
+        raise MetricDefinitionError(
+            f"metric {key!r}: 'take' must be one of {sorted(_TAKE)}, got {take!r}"
+        )
+    within = int(spec.get("within", 300))
+    if not 10 <= within <= 2000:
+        raise MetricDefinitionError(
+            f"metric {key!r}: 'within' must be between 10 and 2000 characters"
+        )
+    patterns = tuple(
+        re.escape(phrase) + r"[^.]{0," + str(within) + r"}?" + _TAKE[take]
+        for phrase in near
+    )
+    return tuple(near), patterns
+
+
 class MetricDefinitionError(ValueError):
     """A user-supplied metric definition that cannot be trusted to render."""
 
@@ -116,8 +165,19 @@ def parse_spec(raw: dict[str, Any]) -> MetricSpec:
             raise MetricDefinitionError(
                 f"metric {raw['key']!r}: sane_range must be [low, high] with low < high"
             )
+    anchors = tuple(raw.get("prose_anchors", ()))
+    patterns = tuple(raw.get("prose_patterns", ()))
+    if raw.get("match"):
+        if patterns:
+            raise MetricDefinitionError(
+                f"metric {raw['key']!r}: give either 'match' or 'prose_patterns', "
+                "not both -- two ways to find the same value is two ways to "
+                "disagree about it"
+            )
+        anchors, patterns = compile_match(raw["match"], raw["key"])
+
     if not any(
-        raw.get(k) for k in ("highlights_rows", "xbrl_tags", "prose_patterns")
+        (raw.get("highlights_rows"), raw.get("xbrl_tags"), patterns)
     ):
         # Allowed, but say so: it will render blank everywhere.
         log.warning(
@@ -133,8 +193,9 @@ def parse_spec(raw: dict[str, Any]) -> MetricSpec:
         sane_range=tuple(rng) if rng else (-1e9, 1e9),
         highlights_rows=tuple(raw.get("highlights_rows", ())),
         xbrl_tags=tuple(raw.get("xbrl_tags", ())),
-        prose_patterns=tuple(raw.get("prose_patterns", ())),
-        prose_anchors=tuple(raw.get("prose_anchors", ())),
+        prose_patterns=patterns,
+        prose_anchors=anchors,
+        match=raw.get("match"),
         entity_types=tuple(raw.get("entity_types", ())),
         custom=True,
         note=raw.get("note", ""),

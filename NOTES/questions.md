@@ -185,19 +185,20 @@ here can be resolved by building.
 
 ### New, from the scope update
 
-5. **Who authors a custom metric definition?** This is the biggest one. A metric
-   found in a financial-highlights table needs only a row label -- a PM could
-   write that. A metric living in prose needs a regex, which a PM will not write.
-   Three options: (a) they send us the metric and we add the definition, (b) we
-   build an analyst-facing definition format that avoids regex, (c) custom
-   metrics are limited to what tables and tagged data can reach. The feature as
-   built assumes (a). If they expect (b), that is real additional work and should
-   be scoped now rather than discovered at the demo.
-6. **Weighted average spread: define it.** It got zero coverage, and not for
-   want of trying -- filers state it inconsistently, some as spread over a
-   benchmark and some as all-in yield, and the two are not the same number. This
-   is the same shape of question as the leverage definition and needs the same
-   kind of answer before it can be extracted.
+5. **Do the PMs want to author metric definitions themselves?** Reduced by
+   building: option (b) now exists. A table metric needs a row label; a prose
+   metric can be declared with a regex-free `match` block (name the phrase, say
+   what to take, bound the distance) that an analyst can write. `prose_patterns`
+   remains for the hard cases. So the question is no longer "can they" but
+   "do they want to, or would they rather send the metric to us" -- a workflow
+   preference rather than a scoping decision.
+6. **Weighted average spread: define it, and know it is not a config entry.**
+   Zero coverage, and I checked why: GBDC's 10-K mentions the exact phrase once,
+   and the numbers live in tables with per-filer structure rather than in prose.
+   So this needs two things from her -- which definition she means (spread over
+   benchmark vs all-in yield; they are different numbers) -- and an
+   acknowledgement that extracting it is per-filer table work, not a definition
+   she can add herself.
 7. **RESOLVED BY BUILDING — not a question any more.** Non-accrual now ships on
    *both* bases as two metrics (0.6% cost, 0.3% fair value for GBDC). The basis
    is a render choice from data already extracted, not a blocking question.

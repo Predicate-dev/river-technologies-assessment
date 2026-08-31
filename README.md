@@ -48,6 +48,8 @@ python -m apexridge --metrics metrics/custom_metrics.json
 # Fund browser — search EDGAR, inspect the classification, then add by CIK
 python -m apexridge --find "Cliffwater Corporate Lending"
 python -m apexridge --add-cik 1287750          # adds Ares Capital to the set
+python -m apexridge --add-cik 1287750 --save-peers peers.json
+python -m apexridge --peers peers.json         # reuse a saved peer set
 
 # Word output lands in output/benchmark_report.docx on every run
 ```
@@ -68,7 +70,7 @@ python -m apexridge --help
 
 ```bash
 pip install -r requirements-dev.txt
-python -m pytest tests/ -q          # 114 tests
+python -m pytest tests/ -q          # 124 tests
 ```
 
 Tests cover the data-correctness path and the failure modes drawn from real
@@ -166,7 +168,20 @@ code. Adding one is a JSON entry in the file passed to `--metrics`; the original
 nine are declared the same way, so a custom metric gets identical provenance,
 reconciliation and confidence treatment rather than a weaker side channel.
 
-`metrics/custom_metrics.json` ships the three the PMs named. Portfolio turnover
+Simple metrics need no regex. The `match` form — name the phrase to look beside,
+say what to take, bound how far to look — is what an analyst can author:
+
+```json
+{"key": "total_annual_expenses_pct", "label": "Total annual expenses",
+ "unit": "pct", "direction": -1,
+ "match": {"near": ["Total Annual Expenses"], "take": "first_percent"}}
+```
+
+`prose_patterns` remains for cases that cannot express — two figures in one
+sentence, for instance. Supplying both is rejected: two ways to find the same
+value is two ways to disagree about it.
+
+`metrics/custom_metrics.json` ships the metrics the PMs named. Portfolio turnover
 and GBDC's non-accrual rate extract with no code change. A definition that names
 no reachable source is allowed but warns, and renders blank with that reason.
 
@@ -191,9 +206,12 @@ Fiscal year end is derived from the filer's own annual filings, not EDGAR's
 registration metadata — EDGAR records 12-31 for CCLFX, whose N-CSR plainly
 covers a year ended 31 March, and every anchoring decision keys off it.
 
-Note that SEC's ticker files do not list non-traded interval funds at all, so
-name search is the only route to that fund type and it rate-limits heavily. The
-CIK is always accepted directly.
+Search runs on EDGAR full-text search, the only SEC index that sees non-traded
+interval funds — the ticker files omit them entirely. It finds CCLFX and returns
+its ticker, which no other SEC index does. A CIK is always accepted directly.
+
+`--save-peers` and `--peers` persist a set as readable JSON, so the CIO who owns
+the peer list can inspect it without running anything.
 
 ## Watching for silent failure
 
@@ -225,7 +243,7 @@ deterministic and means a demo cannot be broken by a network hiccup.
 
 ## Current status
 
-Prototype. 114 tests passing, running against live EDGAR at the Q4 2025 anchor.
+Prototype. 124 tests passing, running against live EDGAR at the Q4 2025 anchor.
 26 of 36 competitor cells populate; the rest blank with a stated reason, broken
 down cell by cell in `output/coverage_breakdown.md`. Known gaps and their causes
 — some ours, some structural to the filers, and some possibly outside EDGAR

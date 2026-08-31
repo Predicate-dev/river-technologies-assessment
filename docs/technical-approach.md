@@ -1,7 +1,7 @@
 # Technical approach — competitor benchmarking pipeline
 
 **Audience:** Apex Ridge technical counterpart
-**Status:** prototype against live SEC EDGAR · 114 tests · 26 of 36 competitor cells populate at the Q4 2025 anchor
+**Status:** prototype against live SEC EDGAR · 124 tests · 26 of 36 competitor cells populate at the Q4 2025 anchor
 
 ---
 
@@ -145,7 +145,9 @@ fair value in one sentence ("were 0.6% and 0.3%, respectively") and the two are
 not interchangeable, which is the kind of thing a metric definition has to pin
 down rather than leave to whoever writes the pattern.
 
-**Fund discovery.** `--find` searches, `--add-cik` adds. It never auto-resolves a
+**Fund discovery.** `--find` searches on EDGAR full-text search — the only SEC
+index that sees non-traded interval funds, which the ticker files omit entirely —
+and `--add-cik` adds. Peer sets persist as readable JSON. It never auto-resolves a
 search: "Golub Capital BDC" returns three CIKs, none of them the right one. And
 it refuses a filer it cannot classify confidently, because every adapter keys off
 entity type and fiscal year end — misclassification produces confidently wrong

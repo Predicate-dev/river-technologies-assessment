@@ -111,7 +111,7 @@ def test_shipped_example_file_is_valid():
     # spread. The non-accrual pair is deliberate -- filers state cost and fair
     # value in one sentence, so shipping both makes the basis a render choice
     # rather than a question that blocks extraction.
-    assert len(registry.custom) == 4
+    assert len(registry.custom) == 5
     for spec in registry.custom:
         assert spec.label and spec.unit
         assert spec.prose_patterns or spec.highlights_rows or spec.xbrl_tags
@@ -147,3 +147,48 @@ def test_registry_rejects_a_second_definition_of_the_same_custom_key():
     b = parse_spec({"key": "dup", "label": "Two"})
     with pytest.raises(MetricDefinitionError, match="duplicate"):
         MetricRegistry([a, b])
+
+
+# ------------------------------------------------- regex-free definitions
+
+
+def test_match_block_compiles_to_a_working_pattern():
+    """The form an analyst can author: name the phrase, say what to take."""
+    import re
+
+    spec = parse_spec({
+        "key": "na", "label": "Non-accrual", "unit": "pct", "direction": -1,
+        "match": {"near": ["non-accrual investments"], "take": "first_percent"},
+    })
+    assert spec.prose_anchors == ("non-accrual investments",)
+    text = ("non-accrual investments as a percentage of total investments at "
+            "cost and fair value were 0.6% and 0.3%")
+    assert re.search(spec.prose_patterns[0], text, re.I).group(1) == "0.6"
+
+
+def test_match_requires_a_near_phrase():
+    with pytest.raises(MetricDefinitionError, match="near"):
+        parse_spec({"key": "x", "label": "X", "match": {"take": "first_percent"}})
+
+
+def test_match_rejects_an_unknown_take():
+    """The vocabulary is small on purpose; an unknown verb must not silently
+    fall back to something else."""
+    with pytest.raises(MetricDefinitionError, match="take"):
+        parse_spec({"key": "x", "label": "X", "match": {"near": ["a"], "take": "vibes"}})
+
+
+def test_match_and_prose_patterns_together_are_rejected():
+    """Two ways to find the same value is two ways to disagree about it."""
+    with pytest.raises(MetricDefinitionError, match="not both"):
+        parse_spec({
+            "key": "x", "label": "X",
+            "match": {"near": ["a"]},
+            "prose_patterns": [r"(\d+)%"],
+        })
+
+
+def test_match_window_is_bounded():
+    with pytest.raises(MetricDefinitionError, match="within"):
+        parse_spec({"key": "x", "label": "X",
+                    "match": {"near": ["a"], "within": 99999}})

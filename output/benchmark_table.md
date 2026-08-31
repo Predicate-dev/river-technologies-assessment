@@ -19,11 +19,13 @@ Confidence: High / Med / Low. A blank cell states why it is blank; it is never a
 | Non-accrual rate (% of portfolio, fair value) | _blank: no figure located in filings -- not present in the fund data supplied by Apex Ridge_ | _blank: no figure located in filings -- no candidate value found in any source_ | _blank: no figure located in filings -- no candidate value found in any source_ | **0.30%** (Low) as of 2025-09-30 | _blank: no figure located in filings -- no candidate value found in any source_ |
 | Non-accrual rate (% of portfolio, cost) | _blank: no figure located in filings -- not present in the fund data supplied by Apex Ridge_ | _blank: no figure located in filings -- no candidate value found in any source_ | _blank: no figure located in filings -- no candidate value found in any source_ | **0.60%** (Low) as of 2025-09-30 | _blank: no figure located in filings -- no candidate value found in any source_ |
 | Weighted average spread (bps) | _blank: no figure located in filings -- not present in the fund data supplied by Apex Ridge_ | _blank: no figure located in filings -- no candidate value found in any source_ | _blank: no figure located in filings -- no candidate value found in any source_ | _blank: no figure located in filings -- no candidate value found in any source_ | _blank: no figure located in filings -- no candidate value found in any source_ |
+| Total annual expenses | _blank: no figure located in filings -- not present in the fund data supplied by Apex Ridge_ | **3.27%** (Med) as of 2025-08-12 | _blank: no figure located in filings -- no candidate value found in any source_ | **11.77%** (Low) as of 2025-09-30 | _blank: no figure located in filings -- no candidate value found in any source_ |
 
 ## Source conflicts resolved in this run
 
 - **TAKIX — Management fee**: candidates 1, 1.5 (spread 33%). Resolved to **1 (text_pattern)**. kept 1: agreed on by 1 independent extraction(s) vs 1.5 (1); chosen source text_pattern, flags ['rate_not_restated_within_window']
 - **GBDC — Incentive fee**: candidates 15, 20 (spread 25%). Resolved to **15 (text_pattern)**. kept 15: agreed on by 2 independent extraction(s) vs 20 (1); chosen source text_pattern, no flags
+- **GBDC — Total annual expenses**: candidates 11.77, 12.27 (spread 4%). Resolved to **11.77 (text_pattern)**. kept 11.77: agreed on by 1 independent extraction(s) vs 12.27 (1); chosen source text_pattern, no flags
 
 ## Blank cells
 

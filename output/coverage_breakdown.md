@@ -1,6 +1,6 @@
 # Coverage breakdown — cell by cell
 
-Reporting quarter 2025-12-31. **29 of 52 competitor cells populated.**
+Reporting quarter 2025-12-31. **31 of 56 competitor cells populated.**
 
 Each empty cell is classified by who owns the gap. The OURS rows are the ones this system can act on; the rest need either a client decision or a filing that does not exist.
 
@@ -21,18 +21,19 @@ Each empty cell is classified by who owns the gap. The OURS rows are the ones th
 | Non-accrual rate (% of portfolio, fair value) | _OURS_ | _OURS_ | **0.3 pct** (Low) | _OURS_ |
 | Non-accrual rate (% of portfolio, cost) | _OURS_ | _OURS_ | **0.6 pct** (Low) | _OURS_ |
 | Weighted average spread (bps) | _OURS_ | _OURS_ | _OURS_ | _OURS_ |
+| Total annual expenses | **3.27 pct** (Medium) | _OURS_ | **11.77 pct** (Low) | _OURS_ |
 
 ## Where the gaps sit
 
 | Owner | Cells | Meaning |
 | --- | --- | --- |
-| FILLED | 29 | reported with a confidence grade |
-| OURS | 11 | extraction we have not built, or evidence too thin |
+| FILLED | 31 | reported with a confidence grade |
+| OURS | 13 | extraction we have not built, or evidence too thin |
 | CADENCE | 5 | figure exists but falls outside the six-month window |
 | CLIENT | 1 | computable, withheld pending a client decision |
 | STRUCTURAL | 6 | the filer does not publish it; no work would fix it |
 
-### Ours to close (11)
+### Ours to close (13)
 
 - **CCLFX — Non-accrual rate (% of portfolio, cost)** [no_candidate]: no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below
 - **CCLFX — Non-accrual rate (% of portfolio, fair value)** [no_candidate]: no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below
@@ -41,9 +42,11 @@ Each empty cell is classified by who owns the gap. The OURS rows are the ones th
 - **GBDC — Weighted average spread (bps)** [no_candidate]: no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below
 - **KREF — Non-accrual rate (% of portfolio, cost)** [no_candidate]: no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below
 - **KREF — Non-accrual rate (% of portfolio, fair value)** [no_candidate]: no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below
+- **KREF — Total annual expenses** [no_candidate]: no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below
 - **KREF — Weighted average spread (bps)** [no_candidate]: no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below
 - **TAKIX — Non-accrual rate (% of portfolio, cost)** [no_candidate]: no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below
 - **TAKIX — Non-accrual rate (% of portfolio, fair value)** [no_candidate]: no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below
+- **TAKIX — Total annual expenses** [no_candidate]: no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below
 - **TAKIX — Weighted average spread (bps)** [no_candidate]: no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below
 
 ### Cadence-limited (5)
@@ -72,5 +75,5 @@ Each empty cell is classified by who owns the gap. The OURS rows are the ones th
 | Grade | Cells |
 | --- | --- |
 | High | 1 |
-| Medium | 12 |
-| Low | 16 |
+| Medium | 13 |
+| Low | 17 |
