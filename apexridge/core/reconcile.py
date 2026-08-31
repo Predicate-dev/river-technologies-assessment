@@ -35,6 +35,7 @@ from .confidence import (
     STALE_LIMIT_DAYS,
     SUPPRESS_BELOW,
     grade,
+    is_measurement,
     score_candidate,
     values_agree,
 )
@@ -171,6 +172,12 @@ def _resolve_within_basis(
     clusters = _cluster(group)
     clusters.sort(
         key=lambda cl: (
+            # A rate the filing itself describes as superseded can never beat a
+            # current one, whatever else it has going for it. Flag *count* is
+            # too crude a tiebreak here: it let TAKIX's 1.50% rate, retired in
+            # 2020, outrank the current 1.00% on recency alone because both
+            # carried exactly one flag.
+            not any(is_measurement(c) for c in cl),
             -_independent_count(cl),
             min(len(c.flags) for c in cl),
             -max(c.tier.base_score for c in cl),
@@ -362,7 +369,11 @@ def reconcile_metric(
     # it first also means the cell carries the more useful of the two reasons --
     # "the data stops here" tells the reader what to do next, "confidence 0.31"
     # does not.
-    age_days = (reference_date - chosen.as_of).days if chosen.as_of else None
+    # Terms metrics measure staleness from the last filing that could have
+    # amended the rate, not from the document we read: a contractual rate
+    # cannot change without a filing (Lara, Window 2).
+    clock = chosen.staleness_date
+    age_days = (reference_date - clock).days if clock else None
     if age_days is not None and age_days > STALE_LIMIT_DAYS:
         return _suppress(
             resolved,

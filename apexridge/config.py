@@ -75,6 +75,22 @@ ALL_METRICS = (
     M_DIST_YIELD,
 )
 
+# Terms metrics state a contractual rate rather than measure a quantity. A rate
+# cannot change unobserved: it moves only by an amendment, and an amendment is
+# itself a filing event. So their staleness clock runs from the most recent
+# filing that *could* have disclosed a change, not from the period end of the
+# document we happened to read (Lara, Window 2).
+TERMS_METRICS = (M_MGMT_FEE, M_INCENTIVE_FEE, M_HURDLE)
+
+# Forms that would carry a fee or hurdle amendment for each filer type. A later
+# filing of one of these, silent on the rate, is the evidence that no amendment
+# has landed.
+AMENDABLE_FORMS = {
+    "bdc": ("10-K", "10-Q", "8-K", "DEF 14A", "424B2", "497"),
+    "mortgage_reit": ("10-K", "10-Q", "8-K", "DEF 14A"),
+    "interval_fund": ("486BPOS", "497", "424B3", "N-CSR", "N-CSRS"),
+}
+
 METRIC_LABELS = {
     M_RETURN_1Y: "Net return, trailing 1Y (ann.)",
     M_RETURN_3Y: "Net return, trailing 3Y (ann.)",

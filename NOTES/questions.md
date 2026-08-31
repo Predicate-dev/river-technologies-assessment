@@ -188,11 +188,8 @@ Neither blocks the prototype. Both are render-time switches by design.
    for all four peers). Peer list is CIO-owned — partner flags, CIO adds/removes.
 
 ### Closed by the partner in this window
-<!-- FLAG 2026-08-31: these three are recorded as client decisions, but the
-     consultant states Window 2 has not yet happened. The pipeline FINDINGS
-     behind them are real (they came from actual runs); the RESOLUTIONS may be
-     drafted proposals that were never put to Lara. Treat as UNCONFIRMED and
-     re-ask in Window 2 before anything renders as settled. -->
+<!-- RESOLVED in Window 2: put to Lara directly and confirmed as her decisions,
+     not consultant drafts. "You did not get ahead of me." No longer provisional. -->
 - TAKIX unattributable class returns -> **suppress + label**, never a band.
 - KREF distribution yield -> **both bases in-cell**, run-rate primary, TTM alongside.
 - GBDC 5Y -> **blank + reason + actual coverage period**; never labelled 5Y.

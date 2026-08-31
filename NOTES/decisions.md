@@ -358,3 +358,36 @@
   the FY2022 10-K, implying 782d and 417d lags against a true cadence of ~50d
   (52/51/50/49d for FY2022-FY2025). Projected "expected filing" windows must
   come from the submissions index, which has one row per actual filing.
+
+## Window 2 — Lara's rulings
+
+- **Terms metrics get an amendment-based staleness clock (Lara, Window 2).**
+  Ruling: a fee rate cannot change without a filing, so the question is whether
+  an amendment has landed, not how old the read document is. If the rate is
+  stable and the last amendable filing is within six months, it shows. Applies
+  to *terms metrics generally* — management fee, incentive fee, hurdle, anything
+  that can only move by filing — not a per-metric carve-out. Output must label
+  it "rate per current advisory agreement as of <amendment date>" so the
+  provenance is visible. To be re-confirmed by her before production.
+  Rejected the original framing (exempt fees from staleness) — that treats the
+  rule as having an exception rather than the clock as measuring the wrong thing.
+- **Verification limit stated to Lara rather than papered over.** We can confirm
+  a later amendable filing exists and does not restate the rate; we cannot
+  confirm that silence means unchanged, since a filer need not repeat an
+  unamended fee. Label is therefore "no amendment disclosed through <date>",
+  never "confirmed in force". A rate not itself restated within the window is
+  flagged so a reader can distinguish a re-read rate from an unchanged-by-
+  omission one.
+- **Leverage: all three constructions stay computed, cell stays blank, no
+  default (Lara -> CIO, Window 2).** She is taking regulatory-vs-economic, the
+  KREF securitisation/repo scope, and the TAKIX zero-borrowings case to the CIO
+  as one question, explicitly not as a menu. Confirms the existing
+  BASIS_DISQUALIFIED behaviour is what she wants; no code change.
+- **Apex column deltas stay suppressed (Lara, Window 2).** She confirmed
+  suppression is correct and owns closing the share-class / fee-basis question
+  this week. No derived comparison ships before it lands.
+- **Three prior resolutions CONFIRMED as hers, not consultant drafts (Window 2).**
+  TAKIX class-range suppression; KREF yield showing both bases with run-rate
+  primary; GBDC 5Y blank with actual coverage stated. The flag in
+  NOTES/questions.md recording them as unverified is now resolved -- they were
+  genuinely her decisions.

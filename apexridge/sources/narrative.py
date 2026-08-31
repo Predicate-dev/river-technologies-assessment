@@ -35,6 +35,8 @@ from typing import Any, Callable, Iterable
 from bs4 import BeautifulSoup
 
 from ..config import (
+    AMENDABLE_FORMS,
+    TERMS_METRICS,
     M_DIST_YIELD,
     M_HURDLE,
     M_INCENTIVE_FEE,
@@ -45,6 +47,7 @@ from ..config import (
     M_RETURN_5Y,
     Fund,
 )
+from ..core.confidence import STALE_LIMIT_DAYS
 from ..core.models import Candidate, Provenance, SourceTier
 from ..edgar import EdgarClient, Filing
 
@@ -728,6 +731,58 @@ def load_docs(
     return docs
 
 
+def amendment_clock(
+    fund: Fund, client: EdgarClient, anchor: date
+) -> tuple[date | None, str]:
+    """Latest filing at or before `anchor` that could have amended fee terms.
+
+    Returns (date, form). This is the date through which no amendment has been
+    disclosed -- deliberately not "the date the rate was confirmed in force".
+    A filer is not obliged to restate an unamended fee, so a later silent
+    filing is evidence that nothing changed, not confirmation that the rate was
+    re-read. The distinction is stated to the client and is preserved in the
+    label the cell carries.
+    """
+    latest: date | None = None
+    latest_form = ""
+    for form in AMENDABLE_FORMS.get(fund.entity_type, ()):
+        for filing in client.filings(fund.cik, forms=[form], limit=6):
+            if filing.filing_date and filing.filing_date <= anchor:
+                if latest is None or filing.filing_date > latest:
+                    latest, latest_form = filing.filing_date, form
+                break  # filings come newest-first; the first in range is enough
+    return latest, latest_form
+
+
+def _apply_terms_clock(
+    candidates: list[Candidate],
+    fund: Fund,
+    client: EdgarClient,
+    anchor: date,
+) -> None:
+    """Attach the amendment clock to contractual-terms candidates in place."""
+    terms = [c for c in candidates if c.metric in TERMS_METRICS]
+    if not terms:
+        return
+    clock, form = amendment_clock(fund, client, anchor)
+    if clock is None:
+        return
+    for cand in terms:
+        # Only ever extends the clock forward; a rate read from a document
+        # newer than the last amendable filing keeps its own date.
+        if cand.as_of and clock <= cand.as_of:
+            continue
+        cand.terms_clock = clock
+        cand.transforms.append(
+            f"staleness measured to {clock} ({form}, no amendment disclosed)"
+        )
+        # If the rate itself was not restated inside the staleness window, we
+        # are relying on the absence of an amendment rather than on a re-read.
+        # The client asked to see that difference.
+        if cand.as_of and (clock - cand.as_of).days > STALE_LIMIT_DAYS:
+            cand.flags.append("rate_not_restated_within_window")
+
+
 def extract_all(
     fund: Fund,
     client: EdgarClient,
@@ -747,4 +802,8 @@ def extract_all(
             missing = {M_MGMT_FEE, M_INCENTIVE_FEE, M_HURDLE} - {c.metric for c in out}
             if missing:
                 out.extend(llm_extract(doc, missing, client=llm_client))
-    return [c for c in out if c.metric in fund.supported_metrics]
+
+    kept = [c for c in out if c.metric in fund.supported_metrics]
+    if anchor is not None:
+        _apply_terms_clock(kept, fund, client, anchor)
+    return kept

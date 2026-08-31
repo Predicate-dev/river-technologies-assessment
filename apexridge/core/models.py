@@ -170,10 +170,20 @@ class Candidate:
     # Non-fatal problems found during extraction/normalization.
     flags: list[str] = field(default_factory=list)
     as_of: date | None = None
+    # For a contractual terms metric: the date through which no amendment to
+    # this rate has been disclosed. Staleness is measured against this rather
+    # than `as_of`, because a rate cannot change without a filing. None for
+    # measured quantities, which genuinely do go stale with their period.
+    terms_clock: date | None = None
 
     def __post_init__(self) -> None:
         if self.as_of is None:
             self.as_of = self.provenance.period_end or self.provenance.filing_date
+
+    @property
+    def staleness_date(self) -> date | None:
+        """The date staleness is measured from. See `terms_clock`."""
+        return self.terms_clock or self.as_of
 
     @property
     def basis_key(self) -> str:

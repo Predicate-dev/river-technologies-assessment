@@ -64,6 +64,10 @@ FLAG_PENALTIES: dict[str, float] = {
     "llm_low_agreement": 0.65,
     "single_extraction_pass": 0.90,
     "superseded_rate_present_in_source": 0.85,
+    # We are relying on the absence of a disclosed amendment rather than on
+    # having re-read the rate inside the staleness window. Real evidence, but
+    # weaker than a restatement -- a filer need not repeat an unamended fee.
+    "rate_not_restated_within_window": 0.93,
     "implausible_incentive_fee_rate": 0.35,
     "fee_denominator_unstated": 0.92,
 }
