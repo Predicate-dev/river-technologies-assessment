@@ -776,3 +776,76 @@ basis, and the analyst sourcing results.
   was flipped on a client confirmation this session did not witness. The
   verification cost one question and the downside of being wrong was the one
   outcome the client was most explicit about. Confirmed genuine.
+
+## Leverage: the CIO's ruling, built
+
+- **Two metrics, not one row with a basis label.** `leverage_regulatory_dte` and
+  `leverage_economic_dte`. This deleted the `BASIS_PREFERENCE` entry for
+  leverage, which had been silently choosing gross-debt over total-liabilities.
+  A preference answers the question; a second row asks it out loud.
+- **KREF's perimeter is per-filer extraction, and had to be.** The excluded
+  balance is `kref:CollateralizedLoanObligationsNet` -- a company-extension tag.
+  The SEC company-facts API serves only us-gaap/dei/srt, so it is invisible to
+  `XbrlFacts` and the perimeter is computed from the 10-K's own inline XBRL
+  (`narrative.inline_facts`). This is why the item was half a day rather than a
+  switch. KREF: 2.45x -> 2.98x regulatory, 4.47x -> 3.45x economic. The old
+  economic figure carried $1.2bn of debt with no recourse to KREF.
+- **The perimeter applies to both rows.** A perimeter states which obligations
+  are this filer's leverage; applying it to one row would leave the excluded
+  balance visible on the other, so the two rows would describe different
+  entities.
+- **ASSUMPTION, stated not hidden: KREF's $632m secured term loan is IN, on both
+  rows.** The CIO ruled on securitisation (out) and repo (in) and said nothing
+  about the term loan. It is plain recourse corporate debt and excluding it
+  would need a reason nobody has given. Logged as a question, not a blocker.
+- **`load_docs` selects narrative documents by FILING date, which is wrong for a
+  balance sheet.** It picked KREF's 2024 balance sheet for a Q4 2025 anchor,
+  because the 2025-12-31 10-K is filed in early 2026; the cell blanked as stale
+  rather than rendering a year-old number, which is the good failure. Added
+  `balance_sheet_doc`, selecting on report_date per decision D. Filing-date
+  selection is still correct for the terms documents it was written for.
+- **Confirming the share class did NOT confirm the leverage basis.** Flipping
+  `APEX_BASIS_CONFIRMED` would have published an Apex-versus-peer leverage delta
+  struck against a median whose basis nobody has stated -- Apex's CSV has one
+  unlabelled `leverage_ratio_dte` column. The bases differ by more than 2x
+  (CCLFX 0.32x regulatory vs 0.79x economic), on the metric behind the board
+  incident. Added `APEX_LEVERAGE_BASIS_CONFIRMED`, separately gated: the figure
+  renders on the regulatory row marked `[leverage basis unconfirmed]` and is
+  held out of every leverage median, range and delta. Caught by a peer session
+  reviewing the split.
+- **BASIS_DISQUALIFIED reclassified CLIENT -> STRUCTURAL.** It described TAKIX's
+  blank regulatory cell as "withheld pending a definition the client is
+  deciding". She decided; the ruling did not rescue the cell, because TAKIX
+  reports 0.00 in every borrowing field and its own disclosure holds no
+  regulatory figure to extract. The CLIENT bucket is now empty.
+
+## KREF leverage perimeter (CIO ruling, Window 3)
+
+- **Ruling: non-recourse securitisation out, repo in.** Implemented per-filer
+  rather than as a config switch, and the reason is worth recording: the excluded
+  balance is `kref:CollateralizedLoanObligationsNet`, a *company-extension* tag.
+  The SEC company-facts API serves only us-gaap, dei and srt, so the number is
+  invisible to the XBRL adapter and exists only in the 10-K's own inline XBRL.
+  That is what made the perimeter real extraction work rather than a definition
+  change -- the same distinction we drew for weighted average spread.
+- **Effect is material, in both directions.** KREF moves from 2.45x to 2.98x
+  regulatory and from 4.47x to 3.45x economic. The unadjusted economic figure
+  was carrying $1.2bn of debt with no recourse to KREF, which is exactly the
+  overstatement the CIO's perimeter exists to remove.
+- **ASSUMPTION MADE AND STATED, not a blocking question: KREF's $632m secured
+  term loan is included on both rows.** The CIO ruled on securitisation and repo
+  and said nothing about the term loan. It is included on the grounds that it is
+  plain recourse corporate debt and excluding it would need a reason nobody has
+  given. That is our reasoning, not his ruling. It belongs in the next batch to
+  the client alongside the weighted-average-spread definition and the house Word
+  template. It did not block anything and no cell waited on it.
+- **Document selection bug found en route, and it generalises.** Narrative
+  document selection picks by *filing* date, which is right for terms documents
+  -- a prospectus states the fee in force from when it is filed -- but wrong for
+  a point-in-time measurement. It silently selected KREF's 2024 balance sheet for
+  a Q4 2025 anchor, because the 2025-12-31 10-K is filed in early 2026. The
+  figure blanked as stale rather than rendering wrong, which is the good failure
+  mode, but the rule is now explicit: **balance-sheet figures are eligible on the
+  period they cover, whenever filed** -- decision D applied to measurements
+  rather than terms. Checked `sources/highlights.py` against the same bug: it
+  selects on `report_date <= anchor`, so it is clean.

@@ -247,6 +247,17 @@ visible once leverage split into two rows.
    websites or IR pages rather than filings. The only thing that could still move
    the coverage picture, and it can only shrink scope, not grow it.
 
+### For the next client contact — not blocking, none of these held anything up
+
+- **KREF's $632m secured term loan.** The CIO ruled on securitisation and repo
+  and said nothing about the term loan. We include it on both leverage rows as
+  plain recourse corporate debt; excluding it would need a reason nobody has
+  given. Stated as our assumption rather than his ruling, and worth one sentence
+  of confirmation in the same batch as the two below.
+- **Weighted average spread definition** (carried; extraction not authorised
+  until it exists).
+- **House Word template, fonts and logo** (carried; she is sending them).
+
 ### New, from the scope update
 
 5. **Do the PMs want to author metric definitions themselves?** Reduced by
@@ -317,3 +328,25 @@ Neither blocks the prototype. Both are render-time switches by design.
 - TAKIX unattributable class returns -> **suppress + label**, never a band.
 - KREF distribution yield -> **both bases in-cell**, run-rate primary, TTM alongside.
 - GBDC 5Y -> **blank + reason + actual coverage period**; never labelled 5Y.
+
+## Added after Window 3 closed — batch with the two she still owes
+
+Neither blocks anything; both are one-line answers. Send with the
+weighted-average-spread definition and the house Word template.
+
+- **Which basis is Apex's own leverage ratio on?** Their CSV has a single
+  unlabelled `leverage_ratio_dte` (0.96x). Confirming the share class did not
+  answer this, and the two bases differ by more than 2x. Their figure renders on
+  the regulatory row marked unconfirmed and is excluded from every leverage
+  delta until she says. One-line answer, flips `APEX_LEVERAGE_BASIS_CONFIRMED`.
+- **KREF's $632m secured term loan: in or out?** ASSUMPTION MADE, not a blocker:
+  it is IN on both rows, on the grounds that it is plain recourse corporate debt
+  and the CIO's ruling named only the two ambiguous items. Tell her the
+  assumption rather than asking her to re-rule.
+- **KREF is now excluded from the leverage peer statistics**, because its ruled
+  perimeter is a different basis from the peers' generic construction. Its
+  figures render in the board table and sit out of the medians and ranges, which
+  is the conservative reading of her own basis rule. Worth one sentence to her:
+  for CCLFX and GBDC, which have no securitisation, gross debt and recourse debt
+  coincide, so she may want KREF back in the distribution. Her call, and it is a
+  render switch either way.
