@@ -502,3 +502,94 @@
   is tagged in 10-Q/10-K on a quarterly cadence; no monthly per-share series
   exists for any fund in the set. N-PORT's monthly figures are total returns and
   net assets, not NAV per share, and only for the interval funds.
+
+## Client rulings on fees (relayed via the render session, Window 2)
+
+Recorded as client decisions, not consultant defaults. Provenance note: these
+reached this session relayed by the parallel session, not heard directly.
+
+- **Fee timing: the rate in force DURING the reporting quarter, not the current
+  rate.** Client's reason: "the PMs are benchmarking that period's performance
+  against that period's fee burden. A current rate that changed after the fact
+  is a different number." Consequence for the pipeline: fee resolution must be
+  by effective date against the anchor, NOT by source count.
+- **Majority vote across sources is the wrong mechanism for a rate change, and
+  it was never measuring what it appeared to.** GBDC's fee resolved to 1.0%
+  because it was "agreed on by 3 independent extraction(s) vs 1.375 (1)". Three
+  mentions of a new rate do not make the old rate wrong for a period it
+  governed. Worse, the 10-K states 15.0% as the incentive *rate* and separately
+  15.0% as the incentive fee *cap*, and repeats its amendment sentence many
+  times — so the "independent extractions" were largely one document repeating
+  itself. Apparent corroboration from a single document is not corroboration.
+- **Two-tier fee structures are emitted as two labelled components, never
+  blended or resolved as a conflict.** Client: "a single blended rate destroys
+  information the PMs need, and 'we resolved a conflict' when it was actually a
+  structure is exactly the kind of silent decision I do not want." Same family
+  as the existing basis-vs-conflict distinction — a two-tier fee is two
+  measurements of different things, like gross-debt vs total-liabilities
+  leverage.
+- **Confidence floor holds at 0.40 pending the coverage picture.**
+
+### Correction to the ruling's worked example — verified against source
+
+- **GBDC's 15% and 20% are NOT income vs capital-gains tiers. 20% is the prior
+  rate.** Checked in the cached FY2025 10-K (gbdc-20250930.htm): "the incentive
+  fee rates were reduced from 20.0% to 15.0%" (plural — both tiers moved
+  together), with the Income Incentive Fee at "15.0% of Pre-Incentive Fee Net
+  Investment Income" and "the Capital Gain Incentive Fee, equals (a) 15.0% of
+  our Capital Gain Incentive Fee Base". GBDC does have the two-tier structure
+  the client described; both tiers are 15.0%. Rendering 15/20 as two tiers
+  would have invented a capital-gains tier that does not exist — a fabricated
+  fee number on a board deck, i.e. the failure this engagement exists to remove.
+  The ruling's *policy* is adopted; its worked example is not.
+- **At the 2025-12-31 anchor the mechanism is wrong but the output is right by
+  coincidence.** Management fee 1.375% -> 1.0% effective 2024-07-01; incentive
+  20% -> 15% amended June 2024 and restated May 2025. Both in force at the
+  anchor, so effective-date resolution returns the same 1.0% and 15% that the
+  majority vote returned. It breaks the moment the deck reports an earlier
+  quarter.
+- **Dropped before building: the planned "exclude superseded_rate from the
+  agreement computation" fix.** It would have entrenched the wrong answer
+  whenever the anchor predates a rate change — exactly the case the client just
+  ruled on. Superseded by effective-date selection.
+- **GBDC's hurdle is extractable and currently blank everywhere:** "hurdle rate
+  of 2.0% quarterly (8.0% annualized)", same document.
+
+## Open regression (blocking, in this session's lane)
+
+- **Eligibility filtering landed before the extractors were anchor-aware, and
+  it empties the deck.** Structured candidates surviving `is_eligible` at the
+  2025-12-31 anchor: CCLFX 3->0, TAKIX 2->0, GBDC 11->2, KREF 6->0. Cause is
+  not the filter: `facts.latest()` and `reports[-1]` take the newest
+  observation (mid-2026), eligibility correctly discards it, and nothing falls
+  back to the newest *eligible* observation. Fix is anchor-aware extraction in
+  xbrl_metrics and nport. Not yet started — awaiting go-ahead.
+- **The 28 passing tests do not catch this**, because they exercise
+  reconciliation with synthetic candidates and nothing runs the extractors
+  against an anchor. That test gap is why it landed green.
+
+## Named defect in the confidence model: agreement rewards verbosity
+
+- **`confidence.independent()` treats two candidates from the SAME filing as
+  independent whenever their transforms differ.** So a filer that repeats a
+  sentence, or states a figure in several places, manufactures corroboration:
+  the agreement factor rises to 1.10 with no second observation behind it.
+  GBDC's "agreed on by 3 independent extraction(s)" was one 10-K repeating its
+  own amendment sentence, and counting the incentive fee *cap* (15.0%) as if it
+  were the incentive *rate* (15.0%).
+- **This is separate from the fee-timing ruling and must not be absorbed into
+  it.** Effective-date resolution fixes which rate wins; it does not stop a
+  verbose filer inflating confidence on every other metric. Recorded as its own
+  defect so it survives the fee fix in the technical doc.
+- **Direction of fix (not yet built):** corroboration requires a genuinely
+  separate observation — a different accession, or a different source tier.
+  Same-accession/different-transform is a re-reading, not a second reading, and
+  should score as `AGREEMENT_SINGLE` at most.
+- **Worth keeping in the technical doc even after it is fixed:** at the current
+  anchor the broken fee mechanism returns the right values by coincidence, so
+  the output looks correct. "The output looks right" is not evidence that the
+  mechanism is right — this is the cleanest illustration of it in the project.
+
+- **Correction to an earlier note here: `incentive_hurdle_pct` is not blank
+  across the board.** That note predated the narrative extractor landing. Live:
+  GBDC 8.00%, KREF 7.00%, TAKIX 6.00%, CCLFX blank (no_candidate).

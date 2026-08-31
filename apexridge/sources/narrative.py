@@ -29,7 +29,7 @@ from __future__ import annotations
 import logging
 import re
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 from typing import Any, Callable, Iterable
 
 from bs4 import BeautifulSoup
@@ -519,8 +519,38 @@ SUPERSEDED_RULES: list[tuple[str, tuple[str, ...], str, dict[str, Any]]] = [
 ]
 
 
+_EFFECTIVE_DATE = re.compile(
+    r"effective (?:as of|on)\s+([A-Z][a-z]+\s+\d{1,2},\s*\d{4})", re.I
+)
+
+
+def _effective_from(window: str, match_start: int) -> date | None:
+    """The effective date governing a rate change, if the sentence states one.
+
+    "On August 3, 2023, effective as of July 1, 2024, ... the base management
+    fee rate was reduced from 1.375% to 1.0%" carries two dates: when it was
+    approved and when it took effect. Only the second determines which rate was
+    in force during a given reporting quarter.
+    """
+    head = window[max(0, match_start - 260) : match_start]
+    matches = list(_EFFECTIVE_DATE.finditer(head))
+    if not matches:
+        return None
+    try:
+        return datetime.strptime(
+            re.sub(r"\s+", " ", matches[-1].group(1)), "%B %d, %Y"
+        ).date()
+    except ValueError:
+        return None
+
+
 def superseded_rates(doc: Doc) -> list[Candidate]:
-    """Emit both sides of a "reduced from X% to Y%" disclosure as candidates."""
+    """Emit both sides of a "reduced from X% to Y%" disclosure as candidates.
+
+    Each side carries the effective date where the filing states one, so a deck
+    reporting an earlier quarter can resolve to the rate actually in force then
+    rather than to whichever rate is current now.
+    """
     out: list[Candidate] = []
     seen: set[tuple[str, float]] = set()
     for metric, phrases, pattern, basis in SUPERSEDED_RULES:
@@ -531,6 +561,7 @@ def superseded_rates(doc: Doc) -> list[Candidate]:
                 continue
             old_rate, current_rate = float(m.group(1)), float(m.group(2))
             excerpt = text[max(0, m.start() - 90) : m.end() + 90]
+            effective = _effective_from(text, m.start())
             for value, is_current in ((current_rate, True), (old_rate, False)):
                 if (metric, value) in seen:
                     continue
@@ -555,6 +586,12 @@ def superseded_rates(doc: Doc) -> list[Candidate]:
                         flags=[] if is_current else ["superseded_rate"],
                     )
                 )
+                if effective is not None:
+                    cand = out[-1]
+                    if is_current:
+                        cand.effective_from = effective
+                    else:
+                        cand.effective_until = effective
     return out
 
 

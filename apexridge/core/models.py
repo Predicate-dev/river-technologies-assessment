@@ -177,10 +177,32 @@ class Candidate:
     # than `as_of`, because a rate cannot change without a filing. None for
     # measured quantities, which genuinely do go stale with their period.
     terms_clock: date | None = None
+    # When a filing states the period a contractual rate applies to. Kept OUT
+    # of `basis` deliberately: a basis key partitions candidates into groups
+    # that are never reconciled against each other, so putting a temporal
+    # qualifier there would stop a superseded rate from ever being compared
+    # with the rate that replaced it -- and a silently unreconciled pair is how
+    # a wrong number ships.
+    effective_from: date | None = None
+    effective_until: date | None = None
 
     def __post_init__(self) -> None:
         if self.as_of is None:
             self.as_of = self.provenance.period_end or self.provenance.filing_date
+
+    def in_force_at(self, when: date) -> bool | None:
+        """Whether this rate applied at `when`. None if the filing does not say.
+
+        None is not False: most filings state a rate without dating it, and
+        treating undated as not-in-force would discard the common case.
+        """
+        if self.effective_from is None and self.effective_until is None:
+            return None
+        if self.effective_from is not None and when < self.effective_from:
+            return False
+        if self.effective_until is not None and when >= self.effective_until:
+            return False
+        return True
 
     @property
     def staleness_date(self) -> date | None:

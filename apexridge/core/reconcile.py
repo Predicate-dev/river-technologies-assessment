@@ -155,8 +155,24 @@ def _independent_count(cluster: list[Candidate]) -> int:
     return len({(c.tier, c.provenance.accession, tuple(c.transforms)) for c in cluster})
 
 
+def _in_force(group: list[Candidate], when: date) -> list[Candidate]:
+    """Drop candidates the filing explicitly dates outside the reporting quarter.
+
+    The client resolves a fee to the rate in force *during the reporting
+    quarter*, not to whichever rate is current now. Where a filing supplies an
+    effective date this answers it outright; where it does not, `in_force_at`
+    returns None and the candidate is kept for the evidence-weight rules below.
+    Undated candidates are never discarded -- most filings state a rate without
+    dating it.
+    """
+    dated_out = [c for c in group if c.in_force_at(when) is False]
+    if not dated_out or len(dated_out) == len(group):
+        return group  # nothing to exclude, or excluding all would leave nothing
+    return [c for c in group if c.in_force_at(when) is not False]
+
+
 def _resolve_within_basis(
-    metric: str, group: list[Candidate]
+    metric: str, group: list[Candidate], reference_date: date | None = None
 ) -> tuple[Candidate, list[Candidate], Conflict | None]:
     """Pick one candidate from a same-basis group and log any conflict.
 
@@ -169,6 +185,8 @@ def _resolve_within_basis(
          correctly-tagged XBRL fact came from the wrong document.
       3. **Highest source tier**, then **most recent period**.
     """
+    if reference_date is not None:
+        group = _in_force(group, reference_date)
     clusters = _cluster(group)
     clusters.sort(
         key=lambda cl: (
@@ -333,7 +351,9 @@ def reconcile_metric(
             ),
         )
 
-    chosen, same_basis_others, conflict = _resolve_within_basis(metric, primary_group)
+    chosen, same_basis_others, conflict = _resolve_within_basis(
+        metric, primary_group, reference_date
+    )
 
     score, audit = score_candidate(chosen, same_basis_others, reference_date)
 

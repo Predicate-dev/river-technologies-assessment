@@ -2,7 +2,9 @@
 
 Reporting quarter 2025-12-31. **18 of 36 competitor cells populated.**
 
-Each empty cell is classified by who owns the gap. Only the OURS rows are work this system can close; the rest need either a client decision or a filing that does not exist.
+Each empty cell is classified by who owns the gap. The OURS rows are the ones this system can act on; the rest need either a client decision or a filing that does not exist.
+
+> **Caveat on the OURS rows.** These assume the figure exists somewhere in the filer's EDGAR filings and we have simply not built the extraction. That assumption is now open: the client has confirmed her analysts sometimes source from fund websites, investor-relations pages and press releases as well as EDGAR. Any cell filled that way in the manual pack has no EDGAR source and cannot be closed within the current scope, however much extraction we build. Until the client's cell-by-cell source review comes back, treat OURS as *not yet ruled out* rather than as a committed backlog, and do not read a projected coverage number off this table.
 
 | | CCLFX | TAKIX | GBDC | KREF |
 | --- | --- | --- | --- | --- |
@@ -28,16 +30,16 @@ Each empty cell is classified by who owns the gap. Only the OURS rows are work t
 
 ### Ours to close (13)
 
-- **CCLFX — Distribution yield (ann.)** [no_candidate]: extraction not built for this metric on this filer type
-- **CCLFX — Incentive hurdle** [no_candidate]: extraction not built for this metric on this filer type
-- **CCLFX — NAV per share** [no_candidate]: extraction not built for this metric on this filer type
+- **CCLFX — Distribution yield (ann.)** [no_candidate]: no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below
+- **CCLFX — Incentive hurdle** [no_candidate]: no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below
+- **CCLFX — NAV per share** [no_candidate]: no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below
 - **CCLFX — Net return, trailing 3Y (ann.)** [insufficient_history]: history depth limited by our download cap, not by availability
 - **CCLFX — Net return, trailing 5Y (ann.)** [insufficient_history]: history depth limited by our download cap, not by availability
-- **KREF — Management fee** [no_candidate]: extraction not built for this metric on this filer type
-- **TAKIX — Distribution yield (ann.)** [no_candidate]: extraction not built for this metric on this filer type
-- **TAKIX — Incentive fee** [no_candidate]: extraction not built for this metric on this filer type
+- **KREF — Management fee** [no_candidate]: no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below
+- **TAKIX — Distribution yield (ann.)** [no_candidate]: no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below
+- **TAKIX — Incentive fee** [no_candidate]: no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below
 - **TAKIX — Incentive hurdle** [below_confidence_floor]: evidence too thin; needs a second corroborating source
-- **TAKIX — NAV per share** [no_candidate]: extraction not built for this metric on this filer type
+- **TAKIX — NAV per share** [no_candidate]: no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below
 - **TAKIX — Net return, trailing 1Y (ann.)** [class_attribution_failed]: N-PORT omits class identifiers, but the annual report's financial highlights name each class; that extraction is not built yet
 - **TAKIX — Net return, trailing 3Y (ann.)** [class_attribution_failed]: N-PORT omits class identifiers, but the annual report's financial highlights name each class; that extraction is not built yet
 - **TAKIX — Net return, trailing 5Y (ann.)** [class_attribution_failed]: N-PORT omits class identifiers, but the annual report's financial highlights name each class; that extraction is not built yet

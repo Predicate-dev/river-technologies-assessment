@@ -33,6 +33,7 @@ Two files land in `output/`:
 | File | What it is |
 | --- | --- |
 | `benchmark_table.md` | The board table, in the layout the PMs already read, plus the conflict log and the reason for every blank cell. |
+| `coverage_breakdown.md` | Every cell classified by who owns the gap: reported, ours to close, cadence-limited, blocked on a client decision, or structurally unavailable. |
 | `audit_trail.csv` | One row per candidate value the pipeline found — winners *and* rejects — with source tier, filing accession, in-document locator, verbatim excerpt, transforms applied, flags raised, and the confidence score inputs. |
 
 ### Options
@@ -156,7 +157,9 @@ deterministic and means a demo cannot be broken by a network hiccup.
 ## Current status
 
 Prototype. 45 tests passing, running against live EDGAR at the Q4 2025 anchor.
-14 of 36 competitor cells populate; the rest blank with a stated reason. Known
-gaps and their causes — some ours, some structural to the filers — are in
+18 of 36 competitor cells populate; the rest blank with a stated reason, broken
+down cell by cell in `output/coverage_breakdown.md`. Known gaps and their causes
+— some ours, some structural to the filers, and some possibly outside EDGAR
+entirely — are in
 [`docs/technical-approach.md`](docs/technical-approach.md) §6 and
 [`NOTES/questions.md`](NOTES/questions.md).
