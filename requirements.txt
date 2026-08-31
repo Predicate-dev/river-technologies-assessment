@@ -7,6 +7,7 @@
 requests>=2.31          # EDGAR HTTP client
 pandas>=2.0             # CSV I/O, board table assembly, markdown output
 beautifulsoup4>=4.12    # deterministic HTML table parsing (N-CSR, 10-K exhibits)
+python-docx>=1.1        # Word output for the IC committee's board deck
 
 # Optional -- the narrative-extraction tier. The pipeline runs without these;
 # with no API key it falls back to deterministic table parsing and labels the

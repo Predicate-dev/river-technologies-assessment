@@ -367,12 +367,24 @@ def write_outputs(run: BenchmarkRun, outdir, client=None) -> dict[str, str]:
     versus = out / "apex_vs_peers.md"
     versus.write_text(comparison_markdown(run))
 
+    try:
+        from .word import build_document
+
+        paths_word = build_document(run, out / "benchmark_report.docx")
+    except Exception as exc:  # python-docx optional; Markdown outputs stand alone
+        import logging
+
+        logging.getLogger(__name__).warning("Word output skipped: %s", exc)
+        paths_word = None
+
     paths = {
         "board": str(board),
         "audit": str(audit),
         "coverage": str(coverage),
         "comparison": str(versus),
     }
+    if paths_word:
+        paths["word"] = paths_word
     if client is not None:
         from .trend import build_trend, trend_frame, trend_markdown
 

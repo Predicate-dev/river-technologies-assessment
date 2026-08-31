@@ -58,6 +58,17 @@ def main(argv: list[str] | None = None) -> int:
              "per the open compliance item, client sign-off.",
     )
     parser.add_argument(
+        "--find", metavar="QUERY",
+        help="Search EDGAR for a fund by ticker or name and print candidates "
+             "with their classification. Does not run the benchmark.",
+    )
+    parser.add_argument(
+        "--add-cik", nargs="*", metavar="CIK", default=None,
+        help="Add filers to the comparison set by CIK, alongside the configured "
+             "peers. Each is classified from its own filings and refused if the "
+             "classification is not confident.",
+    )
+    parser.add_argument(
         "--metrics", metavar="JSON", default=None,
         help="A JSON file of custom metric definitions, added to the built-in "
              "set. See metrics/custom_metrics.json for the format.",
@@ -78,6 +89,33 @@ def main(argv: list[str] | None = None) -> int:
         format="%(levelname)s %(name)s: %(message)s",
     )
 
+    if args.find:
+        from .discovery import classify, search
+
+        client = EdgarClient(offline=args.offline)
+        hits = search(client, args.find)
+        if not hits:
+            print(f"No filers matched {args.find!r}.", file=sys.stderr)
+            print(
+                "Note: SEC's ticker files do not list non-traded interval funds, "
+                "and the name-search endpoint rate-limits heavily. Try the exact "
+                "registrant name, or supply the CIK directly with --add-cik.",
+                file=sys.stderr,
+            )
+            return 1
+        print(f"{len(hits)} candidate(s) for {args.find!r}:\n")
+        for h in hits:
+            c = classify(client, h.cik)
+            mark = "usable" if c.usable else "NOT USABLE"
+            print(f"  CIK {h.cik_padded}  {c.name or h.name}")
+            print(f"      {mark}: {c.entity_type or 'unclassified'}, "
+                  f"fiscal year end {c.fiscal_year_end or 'unknown'}")
+            for r in c.reasons:
+                print(f"      - {r}")
+            print()
+        print("Add one with: --add-cik <CIK>", file=sys.stderr)
+        return 0
+
     if args.metrics:
         from . import config as _config
         from .metrics import build_registry
@@ -96,6 +134,29 @@ def main(argv: list[str] | None = None) -> int:
             parser.error(f"unknown ticker(s): {', '.join(sorted(missing))}")
 
     client = EdgarClient(offline=args.offline)
+
+    if args.add_cik:
+        from .discovery import classify, to_fund
+
+        added = []
+        for cik in args.add_cik:
+            c = classify(client, cik)
+            if not c.usable:
+                parser.error(
+                    f"cannot add CIK {cik} ({c.name or 'unknown'}): "
+                    + "; ".join(c.reasons)
+                    + ". Adding a filer we cannot classify would produce "
+                    "confidently wrong figures rather than blanks."
+                )
+            added.append(to_fund(c))
+        funds = funds + tuple(added)
+        for f in added:
+            print(
+                f"Added {f.ticker} ({f.name}) as {f.entity_type}, "
+                f"fiscal year end {f.fiscal_year_end}",
+                file=sys.stderr,
+            )
+
     anchor_kwargs = {"anchor": args.anchor} if args.anchor else {}
 
     print(f"SEC User-Agent: {SEC_USER_AGENT}", file=sys.stderr)
@@ -148,6 +209,7 @@ def main(argv: list[str] | None = None) -> int:
         f"Audit trail: {paths['audit']}\n"
         f"Coverage:    {paths['coverage']}\n"
         f"Apex vs peers: {paths['comparison']}"
+        + (f"\nWord report: {paths['word']}" if "word" in paths else "")
         + (f"\nNAV trend:   {paths['trend']}" if "trend" in paths else ""),
         file=sys.stderr,
     )

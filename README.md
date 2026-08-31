@@ -33,10 +33,24 @@ Two files land in `output/`:
 | File | What it is |
 | --- | --- |
 | `benchmark_table.md` | The board table, in the layout the PMs already read, plus the conflict log and the reason for every blank cell. |
+| `benchmark_report.docx` | The IC committee's Word document: benchmark table, coverage, conflicts, comparison and a provenance appendix. Blank cells carry their reason here too — the Word version must never look more complete than the evidence. |
 | `apex_vs_peers.md` | Peer median, range and ordering per metric, plus Apex's delta and rank. Apex-versus-peer deltas are withheld until the basis of the client's own column is confirmed; peer-to-peer statistics do not depend on it and render today. |
 | `nav_trend.md` | NAV per share over the trailing window, on a common semi-annual footing with each fund's actual reporting dates labelled. |
 | `coverage_breakdown.md` | Every cell classified by who owns the gap: reported, ours to close, cadence-limited, blocked on a client decision, or structurally unavailable. |
 | `audit_trail.csv` | One row per candidate value the pipeline found — winners *and* rejects — with source tier, filing accession, in-document locator, verbatim excerpt, transforms applied, flags raised, and the confidence score inputs. |
+
+### Scope-update features
+
+```bash
+# Custom metrics — a metric is a JSON definition, not a code change
+python -m apexridge --metrics metrics/custom_metrics.json
+
+# Fund browser — search EDGAR, inspect the classification, then add by CIK
+python -m apexridge --find "Cliffwater Corporate Lending"
+python -m apexridge --add-cik 1287750          # adds Ares Capital to the set
+
+# Word output lands in output/benchmark_report.docx on every run
+```
 
 ### Options
 
@@ -54,7 +68,7 @@ python -m apexridge --help
 
 ```bash
 pip install -r requirements-dev.txt
-python -m pytest tests/ -q          # 89 tests
+python -m pytest tests/ -q          # 112 tests
 ```
 
 Tests cover the data-correctness path and the failure modes drawn from real
@@ -144,6 +158,43 @@ NOTES/               decisions, open client questions, descoped items
 docs/                technical approach, solution brief, board format reference
 ```
 
+## Custom metrics
+
+The metric set changes quarter to quarter, so a metric is a *specification* —
+label, unit, direction, plausible range, and where its value can be found — not
+code. Adding one is a JSON entry in the file passed to `--metrics`; the original
+nine are declared the same way, so a custom metric gets identical provenance,
+reconciliation and confidence treatment rather than a weaker side channel.
+
+`metrics/custom_metrics.json` ships the three the PMs named. Portfolio turnover
+and GBDC's non-accrual rate extract with no code change. A definition that names
+no reachable source is allowed but warns, and renders blank with that reason.
+
+Bad definitions fail the run rather than half-working: an unlabelled or
+wrongly-scaled number in a board deck is the failure this system exists to
+prevent.
+
+## Adding funds
+
+`--find` searches EDGAR and prints candidates with their classification;
+`--add-cik` adds them. Two things it deliberately does not do:
+
+- **It never auto-resolves a search.** Searching "Golub Capital BDC" returns
+  three CIKs, none of them the right one — they are affiliates. Candidates go to
+  a person.
+- **It refuses a filer it cannot classify.** Every adapter keys off entity type
+  and fiscal year end; guessing them wrong produces confidently wrong numbers
+  rather than blanks. Apple Inc. is refused on its SIC code, with the reason
+  stated.
+
+Fiscal year end is derived from the filer's own annual filings, not EDGAR's
+registration metadata — EDGAR records 12-31 for CCLFX, whose N-CSR plainly
+covers a year ended 31 March, and every anchoring decision keys off it.
+
+Note that SEC's ticker files do not list non-traded interval funds at all, so
+name search is the only route to that fund type and it rate-limits heavily. The
+CIK is always accepted directly.
+
 ## Watching for silent failure
 
 The pipeline's failure mode is quiet by design: if a filer changes wording and a
@@ -174,7 +225,7 @@ deterministic and means a demo cannot be broken by a network hiccup.
 
 ## Current status
 
-Prototype. 89 tests passing, running against live EDGAR at the Q4 2025 anchor.
+Prototype. 112 tests passing, running against live EDGAR at the Q4 2025 anchor.
 26 of 36 competitor cells populate; the rest blank with a stated reason, broken
 down cell by cell in `output/coverage_breakdown.md`. Known gaps and their causes
 — some ours, some structural to the filers, and some possibly outside EDGAR
