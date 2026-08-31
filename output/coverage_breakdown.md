@@ -1,6 +1,6 @@
 # Coverage breakdown — cell by cell
 
-Reporting quarter 2025-12-31. **27 of 36 competitor cells populated.**
+Reporting quarter 2025-12-31. **26 of 36 competitor cells populated.**
 
 Each empty cell is classified by who owns the gap. The OURS rows are the ones this system can act on; the rest need either a client decision or a filing that does not exist.
 
@@ -8,7 +8,7 @@ Each empty cell is classified by who owns the gap. The OURS rows are the ones th
 
 | | CCLFX | TAKIX | GBDC | KREF |
 | --- | --- | --- | --- | --- |
-| Net return, trailing 1Y (ann.) | **8.912 pct** (Low) | **6.27 pct** (Medium) | **8.723 pct** (Low) | _STRUCTURAL_ |
+| Net return, trailing 1Y (ann.) | _CADENCE_ | **6.27 pct** (Medium) | **8.723 pct** (Low) | _STRUCTURAL_ |
 | Net return, trailing 3Y (ann.) | _CADENCE_ | **10.36 pct** (Medium) | **11.88 pct** (Low) | _STRUCTURAL_ |
 | Net return, trailing 5Y (ann.) | _CADENCE_ | **8.213 pct** (Medium) | _STRUCTURAL_ | _STRUCTURAL_ |
 | Management fee | **1 pct** (Medium) | **1 pct** (Low) | **1 pct** (Medium) | **1.5 pct** (Low) |
@@ -22,15 +22,16 @@ Each empty cell is classified by who owns the gap. The OURS rows are the ones th
 
 | Owner | Cells | Meaning |
 | --- | --- | --- |
-| FILLED | 27 | reported with a confidence grade |
+| FILLED | 26 | reported with a confidence grade |
 | OURS | 0 | extraction we have not built, or evidence too thin |
-| CADENCE | 3 | figure exists but falls outside the six-month window |
+| CADENCE | 4 | figure exists but falls outside the six-month window |
 | CLIENT | 1 | computable, withheld pending a client decision |
 | STRUCTURAL | 5 | the filer does not publish it; no work would fix it |
 
-### Cadence-limited (3)
+### Cadence-limited (4)
 
 - **CCLFX — Distribution yield (ann.)** [stale_beyond_limit]: figure exists but predates the six-month line
+- **CCLFX — Net return, trailing 1Y (ann.)** [stale_beyond_limit]: figure exists but predates the six-month line
 - **CCLFX — Net return, trailing 3Y (ann.)** [stale_beyond_limit]: figure exists but predates the six-month line
 - **CCLFX — Net return, trailing 5Y (ann.)** [stale_beyond_limit]: figure exists but predates the six-month line
 
@@ -52,4 +53,4 @@ Each empty cell is classified by who owns the gap. The OURS rows are the ones th
 | --- | --- |
 | High | 1 |
 | Medium | 12 |
-| Low | 14 |
+| Low | 13 |

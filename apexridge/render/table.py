@@ -23,7 +23,7 @@ from datetime import date
 import pandas as pd
 
 from ..config import ALL_METRICS, METRIC_LABELS, Fund
-from ..core.models import Cell, Confidence, ShareClass
+from ..core.models import Cell, Confidence, ReasonCode, ShareClass
 from ..pipeline import BenchmarkRun
 from .cells import build_cell, format_basis
 
@@ -104,10 +104,19 @@ def apex_cell(run: BenchmarkRun, metric: str) -> Cell:
     column = APEX_CSV_COLUMNS.get(metric)
     unit = "usd" if metric.endswith("_usd") else ("ratio" if metric.endswith("_dte") else "pct")
     if run.apex is None or run.apex.empty or column not in run.apex.columns:
+        # A blank must always carry a reason, including on the client's own
+        # column: without one the Cell type raises and takes the whole render
+        # down, turning a missing CSV column into a total failure.
         return Cell(
-            fund_ticker=APEX_COLUMN, metric=metric, value=None, unit=unit,
-            as_of=None, basis="", share_class=ShareClass.UNCONFIRMED,
-            reason=None, detail="not present in the supplied fund data",
+            fund_ticker=APEX_COLUMN,
+            metric=metric,
+            value=None,
+            unit=unit,
+            as_of=None,
+            basis="",
+            share_class=ShareClass.UNCONFIRMED,
+            reason=ReasonCode.NO_VALUE_FOUND,
+            detail="not present in the fund data supplied by Apex Ridge",
         )
     row = run.apex.iloc[-1]
     return Cell(

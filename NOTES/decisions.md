@@ -637,3 +637,23 @@ reached this session relayed by the parallel session, not heard directly.
   honest gap rather than inferred. Lara could not recite it from memory either
   and asked the system to pull it; the correct answer is that this document does
   not state it.
+
+## Final consistency pass
+
+- **Coverage now derives from the rendered cells, not the resolved metrics.**
+  They disagreed on CCLFX's 1Y return: the pipeline resolved a fund-level
+  figure, render blanked it for being the wrong share class, and coverage still
+  counted it as populated. Two client-facing documents disagreeing about which
+  cells are filled is worse than either number being wrong, because nobody reads
+  them side by side. Invariant now enforced by test.
+- **Institutional share class ranks above fund-level in reconciliation.** The
+  root cause of the above: a fund-level N-PORT candidate out-ranked a
+  class-level one from the financial highlights on tier alone, so render blanked
+  a cell whose correct value we already had. Corrected count: 26 of 36, not 27.
+- **A blank on Apex's own column carried no reason and crashed the render.** The
+  Cell type raises on a bare blank, which is the right behaviour -- but it meant
+  a missing CSV column became a total failure rather than one empty cell. Found
+  by the consistency test, not in production.
+- **Share-class labels are normalized before comparison.** One CCLFX filing
+  labels its class "Class\n        I"; raw string comparison dropped that table
+  and the fund silently lost a year of NAV history from its trend.

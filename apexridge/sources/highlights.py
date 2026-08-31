@@ -61,6 +61,17 @@ _YEAR_IN_TEXT = re.compile(r"\b(19|20)(\d{2})\b")
 _DECIMAL = re.compile(r"\(?\d[\d,]*\.\d+\)?")
 
 
+def normalize_class(label: str) -> str:
+    """Canonical form of a share-class label.
+
+    Filing HTML splits labels across lines and tags, so the same class appears
+    as "CLASS I" in one table and "Class\n        I" in the next. Comparing raw
+    strings silently drops the second, which is how CCLFX lost a year of NAV
+    history out of its trend.
+    """
+    return re.sub(r"\s+", "", label).lower()
+
+
 def _years_from(row: list[str]) -> list[int]:
     """Fiscal years from a header row.
 
@@ -155,7 +166,7 @@ def _class_from_preamble(text: str) -> str:
     institutional requirement forbids.
     """
     found = _CLASS_HEADING.findall(text)
-    return found[-1] if found else ""
+    return re.sub(r"\s+", " ", found[-1]).strip() if found else ""
 
 
 def parse_table(
@@ -173,7 +184,7 @@ def parse_table(
         years = _years_from(row)
         if len(years) >= 2:
             header_years = years
-            label = row[0].strip()
+            label = re.sub(r"\s+", " ", row[0]).strip()
             if not _YEAR_IN_TEXT.search(label):
                 share_class = label
             else:
@@ -244,12 +255,12 @@ def pick_class(tables: list[HighlightsTable], preferred: str) -> HighlightsTable
     figure understates fee drag and flatters the competitor. Substituting a
     different class silently is the failure that requirement exists to prevent.
     """
-    want = preferred.lower().replace(" ", "")
+    want = normalize_class(preferred)
     for t in tables:
-        if t.share_class.lower().replace(" ", "") == want:
+        if normalize_class(t.share_class) == want:
             return t
     for t in tables:
-        if want in t.share_class.lower().replace(" ", ""):
+        if want in normalize_class(t.share_class):
             return t
     return None
 

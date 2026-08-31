@@ -81,13 +81,25 @@ class CoverageRow:
 
 
 def coverage_rows(run: BenchmarkRun) -> list[CoverageRow]:
+    """Coverage as the board table actually renders it.
+
+    Derived from the rendered cells, not from the resolved metrics: render can
+    withhold a value the pipeline resolved -- a fund-level figure in a cell the
+    client requires to be institutional, for one -- and a coverage report
+    counting resolutions would then claim a cell the deck leaves blank. The two
+    documents disagreeing about what is populated is worse than either number.
+    """
+    from .table import build_cells
+
+    grid = build_cells(run)
     rows: list[CoverageRow] = []
     for ticker, res in run.results.items():
         for metric in ALL_METRICS:
             rm = res.resolved.get(metric)
             if rm is None:
                 continue
-            if rm.value is not None:
+            cell = grid[metric][ticker]
+            if cell.value is not None:
                 rows.append(
                     CoverageRow(
                         fund=ticker,
@@ -99,7 +111,11 @@ def coverage_rows(run: BenchmarkRun) -> list[CoverageRow]:
                     )
                 )
                 continue
-            reason = rm.suppression.reason if rm.suppression else SuppressionReason.NO_CANDIDATE
+            reason = (
+                rm.suppression.reason
+                if rm.suppression
+                else SuppressionReason.NO_CANDIDATE
+            )
             owner, why = _OWNER.get(reason, (OURS, "unclassified"))
             rows.append(
                 CoverageRow(

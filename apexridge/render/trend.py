@@ -30,6 +30,7 @@ from ..core.models import Candidate
 from ..edgar import EdgarClient
 from ..pipeline import BenchmarkRun
 from ..sources import highlights
+from ..sources.highlights import normalize_class
 from ..sources.xbrl import XbrlFacts
 
 log = logging.getLogger(__name__)
@@ -68,8 +69,7 @@ def interval_fund_navs(
     tables = highlights.load_tables(fund, client, anchor, per_form=reports)
     chosen = [
         t for t in tables
-        if t.share_class.lower().replace(" ", "")
-        == fund.institutional_class.lower().replace(" ", "")
+        if normalize_class(t.share_class) == normalize_class(fund.institutional_class)
     ]
     points: dict[date, TrendPoint] = {}
     for t in chosen:

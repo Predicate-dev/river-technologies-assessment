@@ -52,7 +52,7 @@ python -m apexridge --help
 
 ```bash
 pip install -r requirements-dev.txt
-python -m pytest tests/ -q          # 63 tests
+python -m pytest tests/ -q          # 69 tests
 ```
 
 Tests cover the data-correctness path and the failure modes drawn from real
@@ -160,8 +160,8 @@ deterministic and means a demo cannot be broken by a network hiccup.
 
 ## Current status
 
-Prototype. 63 tests passing, running against live EDGAR at the Q4 2025 anchor.
-27 of 36 competitor cells populate; the rest blank with a stated reason, broken
+Prototype. 69 tests passing, running against live EDGAR at the Q4 2025 anchor.
+26 of 36 competitor cells populate; the rest blank with a stated reason, broken
 down cell by cell in `output/coverage_breakdown.md`. Known gaps and their causes
 — some ours, some structural to the filers, and some possibly outside EDGAR
 entirely — are in

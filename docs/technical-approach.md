@@ -1,7 +1,7 @@
 # Technical approach — competitor benchmarking pipeline
 
 **Audience:** Apex Ridge technical counterpart
-**Status:** prototype against live SEC EDGAR · 63 tests · 27 of 36 competitor cells populate at the Q4 2025 anchor
+**Status:** prototype against live SEC EDGAR · 69 tests · 26 of 36 competitor cells populate at the Q4 2025 anchor
 
 ---
 
@@ -140,9 +140,9 @@ the regulatory-vs-economic question now with your CIO.
 
 ## 5. Limitations
 
-- **27 of 36 cells populate**, classified in `output/coverage_breakdown.md` by
+- **26 of 36 cells populate**, classified in `output/coverage_breakdown.md` by
   who owns each gap. **Nothing remains that further extraction would close**:
-  3 are cadence-limited, 1 is blocked on your leverage definition, 5 are
+  4 are cadence-limited, 1 is blocked on your leverage definition, 5 are
   structural. Every metric reachable from EDGAR for these filers is extracted.
 - **That is contingent on EDGAR being the whole scope.** Analysts also source
   from fund websites and IR pages. If cells in the manual pack came from there,

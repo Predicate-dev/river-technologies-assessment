@@ -110,6 +110,26 @@ def _disqualified(cand: Candidate) -> bool:
     return any(f in DISQUALIFYING_FLAGS for f in cand.flags)
 
 
+def _share_class_rank(fund: Fund, cand: Candidate) -> int:
+    """Institutional first, fund-level last.
+
+    The client made institutional a hard requirement for the interval funds
+    because a blended fund-level figure understates fee drag and flatters the
+    competitor. Without this, a fund-level N-PORT candidate could out-rank a
+    class-level one from the financial highlights on tier alone -- and the
+    render layer would then blank a cell whose correct value we already had.
+    """
+    if not fund.institutional_class:
+        return 0
+    declared = str(cand.basis.get("share_class", ""))
+    want = fund.institutional_class.lower().replace(" ", "")
+    if declared.lower().replace(" ", "") == want:
+        return 0
+    if declared in ("", "unstated"):
+        return 1
+    return 2  # explicitly some other class, or fund_level
+
+
 def _basis_rank(metric: str, cand: Candidate) -> int:
     prefs = BASIS_PREFERENCE.get(metric)
     if not prefs:
@@ -302,7 +322,11 @@ def reconcile_metric(
     # Rank bases by policy; the winner supplies the headline value.
     ordered_bases = sorted(
         by_basis.items(),
-        key=lambda kv: (_basis_rank(metric, kv[1][0]), -max(c.tier.base_score for c in kv[1])),
+        key=lambda kv: (
+            _share_class_rank(fund, kv[1][0]),
+            _basis_rank(metric, kv[1][0]),
+            -max(c.tier.base_score for c in kv[1]),
+        ),
     )
     primary_key, primary_group = ordered_bases[0]
 

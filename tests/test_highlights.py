@@ -12,6 +12,7 @@ from datetime import date
 from apexridge.edgar import Filing
 from apexridge.sources.highlights import (
     HighlightsTable,
+    normalize_class,
     _class_from_preamble,
     _values_from,
     _years_from,
@@ -138,4 +139,21 @@ def test_pick_class_returns_none_rather_than_substituting():
 
 def test_pick_class_matches_case_and_spacing_insensitively():
     tables = [HighlightsTable("CLASS I", [2025], filing("N-CSR", date(2025, 12, 31)))]
+    assert pick_class(tables, "Class I") is tables[0]
+
+
+def test_class_labels_split_across_lines_still_match():
+    """Filing HTML splits labels across lines and tags: the same class appears
+    as "CLASS I" in one table and "Class\n        I" in the next. Comparing raw
+    strings dropped the second, and CCLFX lost a year of NAV history from its
+    trend as a result."""
+    assert normalize_class("Class\n        I") == normalize_class("CLASS I")
+    assert normalize_class("Class I") == normalize_class(" class  i ")
+    assert normalize_class("Class A") != normalize_class("Class I")
+
+
+def test_pick_class_matches_a_line_split_label():
+    tables = [
+        HighlightsTable("Class\n        I", [2025], filing("N-CSRS", date(2025, 9, 30)))
+    ]
     assert pick_class(tables, "Class I") is tables[0]

@@ -1,5 +1,5 @@
 fund,metric,status,owner,detail,confidence
-CCLFX,net_return_1y_pct,FILLED,-,8.912 pct,Low
+CCLFX,net_return_1y_pct,stale_beyond_limit,CADENCE,figure exists but predates the six-month line,
 CCLFX,net_return_3y_pct,stale_beyond_limit,CADENCE,figure exists but predates the six-month line,
 CCLFX,net_return_5y_pct,stale_beyond_limit,CADENCE,figure exists but predates the six-month line,
 CCLFX,management_fee_pct,FILLED,-,1 pct,Medium

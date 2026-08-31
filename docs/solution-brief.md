@@ -32,8 +32,8 @@ person still signs off; this replaces the typing, not the review.
 ## The judgment calls, in business terms
 
 **We made the system prefer a gap to a guess** — your rule, applied literally. Of
-36 competitor cells, 27 populate and 9 are blank. Each blank is attributed, and
-none of them is now ours: three are figures that exist but fall outside your
+36 competitor cells, 26 populate and 10 are blank. Each blank is attributed, and
+none of them is now ours: four are figures that exist but fall outside your
 six-month staleness line, one is withheld pending your leverage definition, and
 five are figures the competitor does not publish at all. Every metric reachable
 from EDGAR for these four filers is extracted.
@@ -116,9 +116,9 @@ with a reason, never a wrong number — but it needs an owner, not an install.
 ## Tradeoffs
 
 We chose depth of evidence over breadth of coverage. Filling all 36 cells with
-unverified numbers was achievable in the time. We judged it worth less than 27
+unverified numbers was achievable in the time. We judged it worth less than 26
 cells you can defend in a board meeting, plus an explicit account of who owns each
-of the 9 that are empty.
+of the 10 that are empty.
 
 We also did not build for scope we were told might come. Adding a fund of a type
 already handled is configuration; a plug-in framework for funds nobody has named
