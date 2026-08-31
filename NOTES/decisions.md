@@ -459,3 +459,46 @@
   stragglers. "A partially populated table on time is more useful than a
   complete one late." Makes the projected-filing-window machinery in
   temporal.py load-bearing rather than decorative.
+- **No prior-quarter pack for reconciliation — compliance, not reluctance.**
+  Lara will not share live fund data outside the firm without sign-off. The
+  redacted format reference is all we get. Consequence for the technical doc:
+  the validation section rests on internal cross-source agreement and on
+  reasoning, not on any external check. Say so plainly rather than implying a
+  validation we never ran.
+- **SOURCE SCOPE IS NOW AN OPEN QUESTION, and it was not before.** The analysts
+  "sometimes pull from fund websites, investor relations pages, and press
+  releases in addition to the EDGAR filings". The engagement brief scopes the
+  system to EDGAR. So some cells the manual deck filled may have no EDGAR
+  source at all, and my Window 2 claim that CCLFX "should reach 8 or 9 of 9"
+  was over-confident — it assumed every gap was our extraction coverage.
+  Retracted pending her analyst conversation this week.
+- **Lara's own conclusion, and the line the solution brief should be built on:**
+  "Do not assume the manual deck was accurate just because it had no blanks —
+  that is precisely what I can no longer assume either." The system is not
+  adding blanks to a previously complete picture. It is producing the first
+  honest accounting of which cells were ever actually sourced.
+- **Warn her before she talks to the analysts:** if non-EDGAR sources come into
+  scope, it is not a small addition. The entire confidence model is built on
+  filing-level provenance — accession, in-document locator, verbatim excerpt.
+  A fund website has no accession, no immutable version, and no audit trail; a
+  fact sheet is replaced silently. Anything sourced that way cannot carry the
+  same confidence grade, and mixing the two without labelling would reintroduce
+  exactly the untraceable number the engagement exists to remove.
+- **NAV trend renders on a common semi-annual footing (Lara, Window 2).**
+  Class-level NAV exists only in N-CSR/N-CSRS for the interval funds, i.e.
+  semi-annually (CCLFX Mar/Sep, TAKIX Dec/Jun); N-PORT carries no per-share or
+  per-class field at all. Rejected a mixed-cadence chart on her instruction:
+  "a mixed-cadence chart will generate a question from the PMs about why the
+  lines have different intervals before they get to the numbers." Semi-annual
+  is the lowest common denominator across the set and is therefore the
+  standard. Cadence to be labelled on the chart.
+- **Span assumption, stated not assumed silently:** she ruled on cadence, not
+  span. Defaulting to the spec's 2-year window (8 quarters) at semi-annual
+  cadence = 4 points per fund, with Apex's own column downsampled to the same
+  footing so the comparison is genuinely like-for-like. Flagged to her; a
+  4-year / 8-point span is a one-line change if she wants more depth.
+- **CORRECTION owed to the client: GBDC and KREF have QUARTERLY NAV data, not
+  monthly.** Her drill-down footnote would have overclaimed. Their NAV per share
+  is tagged in 10-Q/10-K on a quarterly cadence; no monthly per-share series
+  exists for any fund in the set. N-PORT's monthly figures are total returns and
+  net assets, not NAV per share, and only for the interval funds.
