@@ -8,29 +8,44 @@
 ## 1. Architecture
 
 ```
-EDGAR ─► source adapters ─► candidates ─► eligibility filter ─► reconciliation
-                                                                      │
-                                          ┌───────────────────────────┘
-                                    resolved value              suppression
-                                    + confidence + provenance   + typed reason
-                                                  │
-                                    board table · coverage · comparison · NAV trend · audit trail · Word
+                SEC EDGAR   live · rate-limited · cached by URL
+                     │
+  ┌──────────────┬───┴──────────┬──────────────────┐
+  ▼              ▼              ▼                  ▼
+XBRL facts   N-PORT XML   N-CSR highlights   Narrative HTML
+GBDC · KREF  CCLFX·TAKIX   CCLFX · TAKIX        all four
+tagged,      fund-level    class-level,      fee tables and
+10-K / 10-Q  monthly       semi-annual       prose patterns
+  └──────────────┴──────────────┴──────────────────┘
+                     │   four sources because four filers
+                     ▼
+   CANDIDATES    value + basis + provenance + flags
+                 many per metric · never a bare number
+                     ▼
+   ELIGIBILITY   period ends on or before the reporting quarter
+                     ▼
+   RECONCILE     group by basis · cluster by agreement
+                 score = tier × agreement × freshness × penalties
+                     │
+           ┌─────────┴─────────┐
+           ▼                   ▼
+    RESOLVED VALUE        SUPPRESSION
+    + confidence          + typed reason
+    + citation            a bare blank raises
+           └─────────┬─────────┘
+                     ▼
+  board table · coverage · comparison · NAV trend · audit · Word
 ```
 
-`edgar.py` throttles to 8 req/s (SEC's ceiling is 10), sends a descriptive
-User-Agent and caches by URL. Adapters emit **candidates** — a value plus its
-evidence — never bare numbers. The split is forced by the filers:
+Nothing below the reconciliation line invents evidence. A value reaches the
+board only by beating the other candidates for its metric, and the losers stay
+in the audit trail — the case for a number is legible only beside what it beat.
 
-| Adapter | Funds | Source |
-| --- | --- | --- |
-| `xbrl.py`, `xbrl_metrics.py` | GBDC, KREF | XBRL company facts |
-| `nport.py` | CCLFX, TAKIX | N-PORT XML |
-| `highlights.py` | CCLFX, TAKIX | N-CSR/N-CSRS financial highlights — the only class-level source |
-| `narrative.py` | all | Fee tables, anchored prose patterns, optional LLM |
-
-The interval funds file no 10-K and have eleven usable `cef:` tags between them,
-so their fee terms exist only in prose and their class-level figures only in the
-annual and semi-annual reports.
+`edgar.py` throttles to 8 req/s against SEC's ceiling of 10 and caches by URL.
+The four-way split is forced, not chosen: the interval funds file no 10-K and
+have eleven usable `cef:` tags between them, so their fee terms exist only in
+prose and their class-level figures only in the annual and semi-annual reports
+(`highlights.py` — the only class-level source there is).
 
 ## 2. Key decisions
 
@@ -87,24 +102,20 @@ cannot be the model.
 **Superseded rates sit beside current ones.** GBDC's 10-K says "reduced from
 1.375% to 1.0%"; TAKIX's prospectus quotes a fee retired in 2020. Both are
 emitted and resolved by effective date, and a superseded rate never renders bare
-— GBDC's superseded 20% and KREF's live 20% are the same number meaning
-opposite things.
-
-**Adjacent figures get confused.** TAKIX's catch-up rate (1.765%) shares a
-sentence with its hurdle (1.500%). KREF's fee is quoted quarterly on adjusted
+— GBDC's superseded 20% and KREF's live 20% are the same number meaning opposite
+things. Adjacent figures confuse similarly: TAKIX's catch-up (1.765%) shares a
+sentence with its hurdle (1.500%), and KREF's fee is quoted quarterly on adjusted
 equity — 0.375%, which is 1.50% a year against peers quoting ~1.0%.
 
 **A quarter BDCs never tag separately** understated GBDC's 1Y return by 265bp
-until reconstructed by differencing the annual total.
-
-**TAKIX reports zero borrowings against $2.2bn of liabilities**, so its
-regulatory cell blanks — that basis measures nothing. Per your CIO's ruling
-leverage reports as two rows, with neither standing in for the other.
+until reconstructed by differencing the annual total. **TAKIX reports zero
+borrowings against $2.2bn of liabilities**, so its regulatory cell blanks — that
+basis measures nothing.
 
 **Your own leverage basis is the one question that survived Window 3.** Your
-confirmation covered share class and fee treatment. It did not say which basis
-your single `leverage_ratio_dte` column uses, and the peers' two bases differ by
-more than a factor of two. Your figure renders; its delta is withheld.
+confirmation covered share class and fee treatment, not which basis your single
+`leverage_ratio_dte` column uses, and the peers' two bases differ by more than a
+factor of two. Your figure renders; its delta is withheld.
 
 ## 5. Limitations
 
@@ -123,11 +134,11 @@ more than a factor of two. Your figure renders; its delta is withheld.
 
 | Risk | Mitigation |
 | --- | --- |
-| **Filers change wording; prose patterns stop matching.** Most likely failure. | A miss produces a blank with a reason, never a wrong number — which is why it goes unnoticed. `--compare-to` diffs against the previous quarter's coverage, names what stopped populating and why, and exits non-zero so a scheduled run gates on it. |
-| **A filer re-tags XBRL or tags the wrong document.** Already observed. | Cross-mechanism agreement plus plausibility ranges; flagged and suppressed, not trusted on tier. |
-| **Non-determinism in rendering.** Found late: tie-breaking with `max(set(...))` varies between processes, so two clones produced different board tables from identical data — a basis label moving on its own, indistinguishable in a diff from a number moving. | Ties break by first appearance. Tested in subprocesses across five hash seeds; an in-process test would have passed against the broken code. Found by running the pipeline twice, which no test had done. |
-| **Source scope expands beyond EDGAR.** Likely. | Adopt web sources only as a distinct, visibly lower tier — a filing has an accession number and an immutable version; a web page has neither. Never blend silently. |
-| **Provenance rots.** | Every value carries accession, form, period, URL, in-document locator and a verbatim excerpt. All resolve today. |
+| **Filers change wording; prose patterns stop matching.** Most likely failure, and silent by design. | A miss blanks with a reason, never a wrong number. `--compare-to` diffs against last quarter's coverage, names what stopped populating and why, and exits non-zero so a scheduled run gates on it. |
+| **A filer re-tags XBRL, or tags the wrong document.** Already observed. | Cross-mechanism agreement plus plausibility ranges. Flagged and suppressed, not trusted on tier. |
+| **Non-determinism in rendering.** Two clones produced different board tables from identical data — a basis label moving on its own, indistinguishable in a diff from a number moving. | Ties break by first appearance, tested across five hash seeds in subprocesses. An in-process test would have passed against the broken code. Found by running the pipeline twice. |
+| **Scope expands beyond EDGAR.** Likely. | Adopt web sources only as a distinct, lower tier. A filing has an accession number and an immutable version; a web page has neither. Never blend silently. |
+| **Provenance rots.** | Every value carries accession, form, period, URL, locator and a verbatim excerpt. All resolve today. |
 
 ---
 
