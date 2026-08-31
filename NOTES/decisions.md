@@ -139,3 +139,16 @@
   $4.47bn net assets. Emitting 0.00 leverage silently would be misleading, so it
   carries a zero_borrowings_but_material_total_liabilities flag. Open item for
   the client (NOTES/questions.md, Window 2).
+- **Blanks are typed, not uniform (partner, Window 1).** He asked for the CCLFX
+  cadence gap to read as "institutional figure not yet filed" rather than as a
+  system failure. Generalised rather than special-cased: every suppressed cell
+  carries a reason code — NOT_APPLICABLE (metric absent for this filer, e.g.
+  KREF net return), NOT_YET_FILED (structural class-level cadence gap; carries
+  expected filing window), STALE (figure exists, exceeds the six-month line;
+  carries last-available as-of date), SUPPRESSED (unresolved source conflict or
+  below confidence). A bare blank is unrepresentable in the output.
+- **Expected filing window is derived, not hardcoded.** Median/min/max lag from
+  reportDate to filingDate over the filer's own prior filings of that form.
+  Observed: CCLFX N-CSRS 66-70d (n=7), N-CSR 68-84d (n=7); TAKIX N-CSRS 52-68d
+  (n=9), N-CSR 58-66d (n=8). So CCLFX's next institutional figure (period
+  2026-09-30) is projected to land early-to-late Dec 2026, from its own history.

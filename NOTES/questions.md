@@ -66,6 +66,20 @@ Bonus if time: what does a wrong number cost vs. a blank cell? (calibrates
 the confidence threshold for suppression)
 
 ## Window 2 (mid-build, after pipeline runs)
+
+**Carried to the CIO by the partner (he will not decide these unilaterally):**
+- **A. Peer-list intent.** What is KREF on the list for, and what is each of the
+  four on the list for? Determines whether one table is the right shape.
+- **B. CCLFX institutional cadence gap.** Class-level data is semi-annual at
+  best; CCLFX's March FYE leaves two windows a year with no institutional
+  figure under six months old (next one projected early-to-late Dec 2026). Is a
+  current *fund-level* figure with an explicit basis marker acceptable as a
+  named fallback for CCLFX specifically? Partner's own preference is the blank
+  (a PM catching a mismatch with footnote 3 is the exact failure he is buying
+  this system to prevent) but he says the call is the CIO's. Build proceeds on
+  blank + NOT_YET_FILED label; fallback is additive if the CIO wants it.
+- **C. Compliance (Q5).** Written answer on third-party model use, timeline in
+  days. LLM path descoped from the prototype meanwhile.
 - TBD: driven by actual conflicts found in the data.
 
 ## Window 3 (pre-delivery)
