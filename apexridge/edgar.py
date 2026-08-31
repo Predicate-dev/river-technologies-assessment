@@ -201,11 +201,6 @@ class EdgarClient:
                 break
         return out
 
-    def filing_documents(self, filing: Filing) -> list[dict[str, Any]]:
-        """Every document in a filing, from its JSON index."""
-        idx = self.get_json(f"{filing.base_url}/index.json")
-        return idx.get("directory", {}).get("item", [])
-
     @staticmethod
     def _pad(cik: str | int) -> str:
         return f"{int(cik):010d}"

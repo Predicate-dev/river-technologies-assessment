@@ -22,7 +22,7 @@ from dataclasses import dataclass
 from datetime import date, timedelta
 
 from ..config import get_fund
-from .models import Candidate, ReasonCode, Suppression, SuppressionLog, SuppressionReason
+from .models import Candidate, Suppression, SuppressionLog, SuppressionReason
 
 # The six-month line is the client's, and it is defined once, in confidence.py,
 # alongside the continuous freshness factor it is deliberately separate from.
@@ -109,15 +109,6 @@ def next_period_end(ticker: str, after: date) -> date:
             date(semi_year, semi_month, calendar.monthrange(semi_year, semi_month)[1])
         )
     return min(c for c in candidates if c > after)
-
-
-def classify(period_end: date | None, anchor: date = DEFAULT_ANCHOR) -> ReasonCode | None:
-    """Reason a candidate cannot be used, or None if it is usable."""
-    if period_end is None or not is_eligible(period_end, anchor):
-        return ReasonCode.NOT_YET_FILED
-    if is_stale(period_end, anchor):
-        return ReasonCode.STALE
-    return None
 
 
 def filter_eligible(

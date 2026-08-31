@@ -101,7 +101,6 @@ class NportReport:
     # month_end -> (return_pct, class_id or None)
     monthly_returns: list[tuple[date, float, str | None]] = field(default_factory=list)
 
-    @property
     def raw_url(self) -> str:
         return self.filing.doc_url("primary_doc.xml")
 

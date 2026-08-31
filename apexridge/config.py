@@ -52,7 +52,6 @@ class Fund:
     def cik_int(self) -> int:
         return int(self.cik)
 
-    @property
     def cik_padded(self) -> str:
         return f"{self.cik_int:010d}"
 
