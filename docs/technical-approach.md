@@ -1,7 +1,9 @@
 # Technical approach — competitor benchmarking pipeline
 
 **Audience:** Apex Ridge technical counterpart.
-**Status:** prototype, built against live SEC EDGAR. 36 tests passing.
+**Status:** prototype, built against live SEC EDGAR. 45 tests passing.
+`python -m apexridge` runs the full pipeline and writes the board table and
+audit trail to `output/`.
 **Reporting anchor:** Q4 2025 (period end 2025-12-31).
 
 ---
@@ -170,16 +172,31 @@ appendix.
 2021-09-30 — 4.75 years. A 4.75-year window is not a 5-year return, so the cell
 states the reason and the coverage it *could* have supported.
 
-**KREF's distribution yield differs by basis.** A Q2 2026 cut from $0.25 to
-$0.10 puts run-rate at 2.52% and trailing-twelve-month at 5.34%. Both render, per
-your ruling that a cut of that size belongs at the cell rather than in a footnote.
+**KREF's distribution yield differs by basis.** A distribution cut puts the
+run-rate and trailing-twelve-month readings materially apart. Both render, per
+your ruling that a cut of that size belongs at the cell rather than in a
+footnote.
+
+**TAKIX's prospectus states a management fee retired in 2020.** "Prior to
+April 1, 2020, the Management Fee was ... 1.50%" sits a few paragraphs from the
+current 1.00%. The same hazard as GBDC's "reduced from" wording in a different
+grammatical form, and it resolved to the wrong rate until historical-clause
+detection was added. Both forms are now tested against the filers' actual text.
+
+**Anchoring is enforced, not assumed.** Every adapter selects as of the
+reporting quarter, and a separate eligibility filter re-checks the result. The
+filter currently drops nothing — which is the point: it exists so that an
+adapter which forgets to anchor produces a visible alignment exclusion rather
+than a peer column silently reporting six months of newer information than the
+client's own.
 
 ## 6. Known limitations
 
-- **Extractors are not yet anchor-aware.** Eligibility filtering is wired, but
-  the XBRL and N-PORT adapters still select the latest observation rather than
-  the one nearest the anchor, so filtering currently blanks more than it should.
-  This is a known in-flight fix, not a design limit.
+- **14 of 36 competitor cells populate.** The remainder blank with a stated
+  reason. Roughly half are structural (a filer does not publish the metric, or
+  publishes it only at a cadence the six-month rule excludes) and half are
+  coverage we have not yet built — chiefly class-level figures for the two
+  interval funds.
 - **N-PORT depth is capped at 8 filings** (~8MB each). The 3Y/5Y interval-fund
   windows are therefore limited by *our* download cap, not by data availability
   — the filings exist at EDGAR today. The appendix states this explicitly so the
