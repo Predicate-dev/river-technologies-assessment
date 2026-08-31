@@ -1,22 +1,22 @@
 fund,metric,status,owner,detail,confidence
 CCLFX,net_return_1y_pct,FILLED,-,8.912 pct,Low
-CCLFX,net_return_3y_pct,insufficient_history,OURS,"history depth limited by our download cap, not by availability",
-CCLFX,net_return_5y_pct,insufficient_history,OURS,"history depth limited by our download cap, not by availability",
+CCLFX,net_return_3y_pct,stale_beyond_limit,CADENCE,figure exists but predates the six-month line,
+CCLFX,net_return_5y_pct,stale_beyond_limit,CADENCE,figure exists but predates the six-month line,
 CCLFX,management_fee_pct,FILLED,-,1 pct,Medium
 CCLFX,incentive_fee_pct,FILLED,-,0 pct,Low
 CCLFX,incentive_hurdle_pct,no_candidate,OURS,"no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below",
-CCLFX,nav_per_share_usd,no_candidate,OURS,"no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below",
+CCLFX,nav_per_share_usd,FILLED,-,10.77 usd,Low
 CCLFX,leverage_ratio_dte,FILLED,-,0.3186 ratio,Medium
-CCLFX,distribution_yield_pct,no_candidate,OURS,"no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below",
-TAKIX,net_return_1y_pct,class_attribution_failed,OURS,"N-PORT omits class identifiers, but the annual report's financial highlights name each class; that extraction is not built yet",
-TAKIX,net_return_3y_pct,class_attribution_failed,OURS,"N-PORT omits class identifiers, but the annual report's financial highlights name each class; that extraction is not built yet",
-TAKIX,net_return_5y_pct,class_attribution_failed,OURS,"N-PORT omits class identifiers, but the annual report's financial highlights name each class; that extraction is not built yet",
+CCLFX,distribution_yield_pct,stale_beyond_limit,CADENCE,figure exists but predates the six-month line,
+TAKIX,net_return_1y_pct,FILLED,-,6.27 pct,Medium
+TAKIX,net_return_3y_pct,FILLED,-,10.36 pct,Medium
+TAKIX,net_return_5y_pct,FILLED,-,8.213 pct,Medium
 TAKIX,management_fee_pct,FILLED,-,1 pct,Low
 TAKIX,incentive_fee_pct,no_candidate,OURS,"no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below",
 TAKIX,incentive_hurdle_pct,below_confidence_floor,OURS,evidence too thin; needs a second corroborating source,
-TAKIX,nav_per_share_usd,no_candidate,OURS,"no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below",
+TAKIX,nav_per_share_usd,FILLED,-,8.32 usd,Low
 TAKIX,leverage_ratio_dte,basis_disqualified,CLIENT,"computable, withheld pending a definition the client is deciding",
-TAKIX,distribution_yield_pct,no_candidate,OURS,"no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below",
+TAKIX,distribution_yield_pct,FILLED,-,9.014 pct,Medium
 GBDC,net_return_1y_pct,FILLED,-,8.723 pct,Low
 GBDC,net_return_3y_pct,FILLED,-,11.88 pct,Low
 GBDC,net_return_5y_pct,window_mismatch,STRUCTURAL,filer's tagged history does not span the labelled window,

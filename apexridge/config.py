@@ -41,6 +41,11 @@ class Fund:
     # Metrics this entity type can support on a like-for-like basis. Anything
     # outside this set is reported with an explicit basis caveat or suppressed.
     supported_metrics: tuple[str, ...]
+    # The share class the board deck reports for this filer. Institutional is a
+    # hard client requirement for the interval funds: a blended fund-level
+    # number understates fee drag and flatters the competitor. Empty for
+    # single-class filers (GBDC, KREF).
+    institutional_class: str = ""
     notes: str = ""
 
     @property
@@ -147,6 +152,7 @@ FUNDS: tuple[Fund, ...] = (
         entity_type="interval_fund",
         fiscal_year_end="03-31",
         primary_forms=("NPORT-P", "N-CSR", "N-CSRS", "486BPOS"),
+        institutional_class="Class I",
         supported_metrics=_FUND_METRICS,
         notes="Non-traded interval fund. No 10-K. Only 6 cef XBRL tags, all "
         "senior-securities stress figures -- narrative extraction required "
@@ -159,6 +165,7 @@ FUNDS: tuple[Fund, ...] = (
         entity_type="interval_fund",
         fiscal_year_end="12-31",
         primary_forms=("NPORT-P", "N-CSR", "N-CSRS", "424B3", "486BPOS"),
+        institutional_class="Class I",
         supported_metrics=_FUND_METRICS,
         notes="Non-traded interval fund. Multi-share-class. 5 cef XBRL tags "
         "only.",

@@ -593,3 +593,29 @@ reached this session relayed by the parallel session, not heard directly.
 - **Correction to an earlier note here: `incentive_hurdle_pct` is not blank
   across the board.** That note predated the narrative extractor landing. Live:
   GBDC 8.00%, KREF 7.00%, TAKIX 6.00%, CCLFX blank (no_candidate).
+
+## Class-level extraction (financial highlights)
+
+- **N-CSR/N-CSRS financial highlights is the only class-level source, and now
+  the largest single coverage win.** Closed CCLFX and TAKIX on NAV per share,
+  distribution yield and all three trailing returns at Class I. Coverage
+  18/36 -> 24/36; OURS gaps 13 -> 4. Satisfies the institutional-class
+  requirement that was agreed in Window 1 but unmet until now.
+- **Trailing returns are chain-linked from stated annual returns.** The filings
+  publish each fiscal year's total return but never an annualized trailing
+  figure, so the arithmetic is ours and is recorded on every candidate.
+- **Returns are taken only from ANNUAL tables.** An N-CSRS leading column is a
+  part-year stub that looks identical to an annual figure; chain-linking it
+  would understate a trailing return with no visible symptom. Point-in-time NAV
+  still uses the freshest report, so CCLFX's NAV comes from the Sept N-CSRS
+  while its returns come from the March N-CSR.
+- **NAV read by column position, not by year.** A semi-annual table repeats the
+  fiscal year for its stub column ("2025", "2025"); keying by year collapsed
+  the two and silently returned the older figure.
+- **pick_class returns None rather than substituting another class.** A blended
+  or retail figure understates fee drag and flatters the competitor, which is
+  precisely what the institutional requirement exists to prevent.
+- **Two table layouts, both handled.** TAKIX uses bare year headers and labels
+  the class in the header row; CCLFX uses period phrases, names the class only
+  in the heading above the table, and splits negatives across cells as "(0.90"
+  then ")". A dropped sign turns a distribution into a gain.

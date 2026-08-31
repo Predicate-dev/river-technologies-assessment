@@ -26,7 +26,7 @@ from .core.models import Candidate, ResolvedMetric, SuppressionLog
 from .core.reconcile import reconcile_fund
 from .core.temporal import DEFAULT_ANCHOR, filter_eligible
 from .edgar import EdgarClient
-from .sources import narrative, nport
+from .sources import highlights, narrative, nport
 from .sources.xbrl import XbrlFacts
 from .sources.xbrl_metrics import extract_all as xbrl_extract
 
@@ -96,6 +96,13 @@ def extract_fund(
             )
         except Exception:
             log.exception("N-PORT extraction failed for %s", fund.ticker)
+        # The only class-level source for these filers, and therefore the only
+        # way to meet the institutional-class requirement.
+        try:
+            class_level, _tables = highlights.extract_all(fund, client, anchor)
+            candidates += class_level
+        except Exception:
+            log.exception("financial-highlights extraction failed for %s", fund.ticker)
     else:
         try:
             facts = XbrlFacts(fund, client)
