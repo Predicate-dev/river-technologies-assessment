@@ -136,14 +136,14 @@ with a reason, never a wrong number — but it needs an owner, not an install.
 
 ## Tradeoffs
 
-We chose depth of evidence over breadth of coverage. Filling all 36 cells with
-unverified numbers was achievable in the time; we judged it worth less than 26
+We chose depth of evidence over breadth of coverage. Filling all 40 cells with
+unverified numbers was achievable in the time; we judged it worth less than 30
 you can defend in a board meeting plus an account of who owns each of the 10
 that are empty.
 
 One consequence of your own rules is worth seeing before it surprises you.
 CCLFX's March fiscal year-end puts its most recent annual report 275 days behind
-a Q4 2025 reporting date — past your six-month line. Three of its cells blank on
-your rule rather than any failure of ours, and this recurs every year in the same
-two quarters. It is the live case for the labelled fund-level fallback now with
+a Q4 2025 reporting date — past your six-month line. Four of its cells blank on
+your rule rather than any failure of ours — all three trailing returns and the
+distribution yield — and this recurs every year in the same two quarters. It is the live case for the labelled fund-level fallback now with
 your CIO.
