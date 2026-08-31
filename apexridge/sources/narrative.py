@@ -435,12 +435,59 @@ PROSE_ANCHOR_LIMIT = 150
 # superseded rate, which makes it a non-measurement in the confidence model: it
 # is kept as evidence and shown in the conflict log, but it can neither
 # corroborate nor outvote the rate actually in force.
+# A BDC's incentive fee has two components -- an income tier and a capital-gain
+# tier -- which may or may not carry the same rate. Where the filing states both
+# at one rate, the cell should say so: the client's IC reads a single "15%" and
+# reasonably asks which tier it refers to.
+_TWO_TIER = re.compile(
+    r"(income incentive fee|capital gain incentive fee)", re.I
+)
+
+
+def _tier_structure(text: str) -> str:
+    """Whether the filing describes a two-tier incentive fee.
+
+    Detected across the whole document rather than inside an extraction window:
+    a BDC names its income and capital-gain tiers in the agreement section,
+    which is often pages away from wherever the rate itself was matched.
+    """
+    tiers = {m.group(1).lower() for m in _TWO_TIER.finditer(text)}
+    if len(tiers) >= 2:
+        return "income and capital-gain tiers"
+    if tiers:
+        return next(iter(tiers))
+    return ""
+
+
 _HISTORICAL_MARKER = re.compile(
     r"\b(prior to|previously|formerly|until\s+\w+\s+\d{1,2},\s*\d{4}|"
     r"through\s+\w+\s+\d{1,2},\s*\d{4}|"
     r"(?:fee|rate)\s+was\s+(?:calculated|payable|equal))\b",
     re.I,
 )
+
+
+_PRIOR_TO_DATE = re.compile(
+    r"prior to\s+([A-Z][a-z]+\s+\d{1,2},\s*\d{4})", re.I
+)
+
+
+def _historical_until(window: str, match_start: int) -> date | None:
+    """The date a historical rate stopped applying, where the clause states it.
+
+    "Prior to April 1, 2020, the Management Fee was ... 1.50%" carries its own
+    end date. Capturing it means the output can say *superseded as of* rather
+    than just *superseded*, which is what the client asked for -- a reader who
+    sees a bare rate treats it as live.
+    """
+    head = window[max(0, match_start - 320) : match_start]
+    m = _PRIOR_TO_DATE.search(head)
+    if not m:
+        return None
+    try:
+        return datetime.strptime(re.sub(r"\s+", " ", m.group(1)), "%B %d, %Y").date()
+    except ValueError:
+        return None
 
 
 def _is_historical(window: str, match_start: int) -> str | None:
@@ -499,6 +546,9 @@ def prose_patterns(doc: Doc) -> list[Candidate]:
                     )
                     value *= mult
                 historical = _is_historical(text, m.start())
+                historical_until = (
+                    _historical_until(text, m.start()) if historical else None
+                )
                 if historical:
                     flags.append("superseded_rate")
                 if metric == M_INCENTIVE_FEE and re.search(
@@ -529,6 +579,8 @@ def prose_patterns(doc: Doc) -> list[Candidate]:
                         flags=flags,
                     )
                 )
+                if historical_until is not None:
+                    out[-1].effective_until = historical_until
                 break
     return out
 
@@ -957,6 +1009,8 @@ def extract_all(
                 out.extend(registry_patterns(doc, specs))
             except Exception:
                 log.exception("registry pattern extraction failed for %s", fund.ticker)
+        tiers = _tier_structure(doc.html)
+        before = len(out)
         for fn in (fee_tables, return_tables, prose_patterns, superseded_rates):
             try:
                 out.extend(fn(doc))
@@ -966,6 +1020,11 @@ def extract_all(
             missing = {M_MGMT_FEE, M_INCENTIVE_FEE, M_HURDLE} - {c.metric for c in out}
             if missing:
                 out.extend(llm_extract(doc, missing, client=llm_client))
+
+        if tiers:
+            for cand in out[before:]:
+                if cand.metric == M_INCENTIVE_FEE:
+                    cand.basis = {**cand.basis, "applies_to": tiers}
 
     kept = [c for c in out if fund.supports(c.metric)]
     if anchor is not None:

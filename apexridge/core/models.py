@@ -227,6 +227,30 @@ class Conflict:
     rationale: str  # why
     candidates: list[Candidate] = field(default_factory=list)
 
+    def label_for(self, value: float) -> str:
+        """How a candidate value must be written wherever it is shown.
+
+        A superseded rate never appears bare. The client's instruction is
+        explicit and correct: "a reader who sees 20% without context will treat
+        it as live." GBDC's superseded 20% and KREF's live 20% are the same
+        number meaning opposite things, so the label travels with the value
+        rather than living in a caption.
+        """
+        for c in self.candidates:
+            if abs(c.value - value) > 1e-9:
+                continue
+            if "superseded_rate" in c.flags:
+                if c.effective_until:
+                    return f"{value:g}% (superseded as of {c.effective_until.isoformat()})"
+                # No date in the filing. "Superseded" alone still prevents the
+                # misreading; claiming a date we do not have would not.
+                return f"{value:g}% (superseded, date not stated in filing)"
+        return f"{value:g}"
+
+    @property
+    def labelled_values(self) -> list[str]:
+        return [self.label_for(v) for v in self.values]
+
 
 @dataclass
 class ResolvedMetric:

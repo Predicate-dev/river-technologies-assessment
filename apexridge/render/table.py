@@ -85,8 +85,10 @@ def _cell_text(cell: Cell) -> str:
     if cell.as_of:
         parts.append(f"as of {cell.as_of.isoformat()}")
     # Basis renders at the cell whenever it diverges from the row's reference,
-    # and unconditionally for leverage -- the metric behind the board incident.
-    if cell.divergent or cell.metric == "leverage_ratio_dte":
+    # and unconditionally for leverage -- the metric behind the board incident --
+    # and for the incentive fee, where a BDC's rate applies to an income tier
+    # and a capital-gain tier and a bare "15%" invites the question which.
+    if cell.divergent or cell.metric in ("leverage_ratio_dte", "incentive_fee_pct"):
         parts.append(f"[{cell.basis}]")
     if cell.share_class is ShareClass.UNCONFIRMED:
         parts.append("[basis unconfirmed]")
@@ -244,7 +246,7 @@ def board_markdown(run: BenchmarkRun) -> str:
     for ticker, rm in conflicts:
         lines.append(
             f"- **{ticker} — {METRIC_LABELS[rm.metric]}**: "
-            f"candidates {', '.join(f'{v:g}' for v in rm.conflict.values)} "
+            f"candidates {', '.join(rm.conflict.labelled_values)} "
             f"(spread {rm.conflict.spread_pct:.0f}%). Resolved to "
             f"**{rm.conflict.resolution}**. {rm.conflict.rationale}"
         )

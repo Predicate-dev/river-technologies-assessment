@@ -680,3 +680,35 @@ reached this session relayed by the parallel session, not heard directly.
   the flag and asserts the output changes -- the technical doc tells the client
   this is one flag rather than a rebuild, so that claim is now tested rather
   than asserted.
+
+## Window 3 — Lara's rulings
+
+- **A superseded rate never renders bare (Lara, Window 3).** Her words: "a
+  reader who sees 20% without context will treat it as live." GBDC's superseded
+  20% and KREF's *live* 20% are the same number meaning opposite things, so the
+  label travels with the value rather than living in a caption. Where the filing
+  states an effective date the label carries it; where it does not, the label
+  says so rather than claiming a date we do not have. Tested in both directions,
+  including that a live rate is not over-labelled.
+- **The GBDC 15/20 "conflict" was never a conflict.** It was a current rate and
+  a historical one, which she correctly identified from the correction. The
+  two-tier display holds -- both tiers really are 15.0% -- and the cell now
+  states which tiers the rate applies to, detected at document level because a
+  BDC names its tiers pages away from where the rate is matched.
+- **NAV drill-down footnote: "Quarterly data available on request" (her
+  wording).** Monthly was never accurate and must not appear in print.
+- **Fee-clock label confirmed for all funds.** "No amendment disclosed through
+  this date", never "confirmed in force". She would rather own the limitation
+  than have the deck imply a confirmation nobody made.
+- **TAKIX leverage stays blank until the CIO rules.** Reconfirmed; do not move.
+- **Weighted average spread: extraction work NOT authorised.** She will take the
+  definition question (spread over benchmark vs all-in yield) to the PMs first.
+  No per-filer table work until a definition exists.
+- **Custom metric authorship: we write the definitions, not the PMs.** The
+  regex-free `match` form stays -- it costs nothing and makes definitions
+  readable to a reviewer -- but self-service is not the workflow.
+- **Word styling: do not guess.** House template, fonts and logo coming by end
+  of week. The IC committee would notice immediately.
+
+Due from her today: leverage definition with the KREF perimeter, the Apex column
+basis, and the analyst sourcing results.

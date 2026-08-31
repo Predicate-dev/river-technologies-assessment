@@ -54,7 +54,12 @@ def _cell_text(cell) -> str:
     if cell.value is None:
         reason = cell.reason.label if cell.reason else "not available"
         return f"— {reason}"
-    text = format_value(cell.value, cell.unit)
+    # Matches the Markdown board table. A fee of zero and a measured zero are
+    # different statements, and "0.00%" in a board document reads as the second.
+    if cell.value == 0.0 and cell.metric in ("incentive_fee_pct", "incentive_hurdle_pct"):
+        text = "none charged"
+    else:
+        text = format_value(cell.value, cell.unit)
     if cell.confidence is None:
         return f"{text} (client data)"
     mark = CONFIDENCE_MARK.get(cell.confidence, "")
@@ -152,7 +157,7 @@ def build_document(run: BenchmarkRun, path: str | Path) -> str:
             p = doc.add_paragraph(style="List Bullet")
             p.add_run(f"{ticker} — {METRIC_LABELS.get(rm.metric, rm.metric)}: ").bold = True
             p.add_run(
-                f"candidates {', '.join(f'{v:g}' for v in rm.conflict.values)}; "
+                f"candidates {', '.join(rm.conflict.labelled_values)}; "
                 f"resolved to {rm.conflict.resolution}. {rm.conflict.rationale}"
             )
 

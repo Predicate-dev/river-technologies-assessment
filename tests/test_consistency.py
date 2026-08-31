@@ -115,3 +115,55 @@ def test_no_incentive_fee_propagates_to_the_hurdle_in_the_rendered_grid():
     grid = build_cells(run)
     assert grid[M_HURDLE][FUND.ticker].value is None
     assert grid[M_HURDLE][FUND.ticker].reason is not None
+
+
+def test_a_superseded_rate_never_renders_bare():
+    """Client instruction, and correct: "a reader who sees 20% without context
+    will treat it as live." GBDC's superseded 20% and KREF's live 20% are the
+    same number meaning opposite things, so the label travels with the value."""
+    from apexridge.core.models import Conflict
+
+    current = candidate("incentive_fee_pct", 15.0, "Class I")
+    old = candidate("incentive_fee_pct", 20.0, "Class I")
+    old.flags.append("superseded_rate")
+    old.effective_until = date(2024, 7, 1)
+
+    conflict = Conflict(
+        fund_ticker=FUND.ticker,
+        metric="incentive_fee_pct",
+        values=[15.0, 20.0],
+        spread_pct=25.0,
+        resolution="15",
+        rationale="",
+        candidates=[current, old],
+    )
+    labels = conflict.labelled_values
+    assert labels[0] == "15"
+    assert "superseded as of 2024-07-01" in labels[1]
+
+
+def test_an_undated_superseded_rate_still_says_superseded():
+    """Where the filing gives no date, claiming one would be worse than saying
+    we do not have it — but the value must still not read as live."""
+    from apexridge.core.models import Conflict
+
+    old = candidate("incentive_fee_pct", 20.0, "Class I")
+    old.flags.append("superseded_rate")
+    conflict = Conflict(
+        fund_ticker=FUND.ticker, metric="incentive_fee_pct", values=[20.0],
+        spread_pct=0.0, resolution="", rationale="", candidates=[old],
+    )
+    label = conflict.labelled_values[0]
+    assert "superseded" in label and "date not stated" in label
+
+
+def test_a_live_rate_is_not_labelled_superseded():
+    """KREF genuinely charges 20%. Over-correcting would be its own error."""
+    from apexridge.core.models import Conflict
+
+    live = candidate("incentive_fee_pct", 20.0, "Class I")
+    conflict = Conflict(
+        fund_ticker=FUND.ticker, metric="incentive_fee_pct", values=[20.0],
+        spread_pct=0.0, resolution="", rationale="", candidates=[live],
+    )
+    assert conflict.labelled_values[0] == "20"

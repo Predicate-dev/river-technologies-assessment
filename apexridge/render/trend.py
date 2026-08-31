@@ -185,9 +185,9 @@ def trend_markdown(run: BenchmarkRun, trend: dict[str, list[TrendPoint]]) -> str
         "Interpolating to a common date would invent observations no filer "
         "published.",
         "",
-        "**Drill-down:** GBDC and KREF publish NAV *quarterly* in their 10-Qs, "
-        "so a finer series is available for those two on request. No fund in "
-        "the set publishes a monthly per-share NAV.",
+        "**Quarterly data available on request** for GBDC and KREF, which "
+        "publish NAV quarterly in their 10-Qs. No fund in this set publishes a "
+        "monthly per-share NAV.",
         "",
     ]
     for fund, points in trend.items():

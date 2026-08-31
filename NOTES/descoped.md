@@ -35,3 +35,13 @@
 - **Raising the N-PORT download cap to reach deeper history.** 8MB per filing;
   the trailing windows it would extend are now sourced from the financial
   highlights instead, which is both cheaper and class-level.
+
+- **Weighted average spread extraction.** Explicitly not authorised (Lara,
+  Window 3): "I am not authorizing extraction work on a metric nobody has
+  defined yet." The definition question -- spread over benchmark vs all-in yield
+  -- goes to the PMs first. Worth noting the metric is also not a config entry:
+  GBDC's 10-K states the phrase once and the figures live in per-filer tables,
+  so it is real extraction work whenever it is authorised.
+- **Word document styling.** Deliberately left generic pending their house
+  template, fonts and logo. Guessing was ruled out: "the IC committee will
+  notice immediately."

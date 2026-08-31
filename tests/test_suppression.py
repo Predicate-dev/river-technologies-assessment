@@ -176,6 +176,80 @@ def test_staleness_outranks_the_confidence_floor():
     assert r.suppression.reason is SuppressionReason.STALE_BEYOND_LIMIT
 
 
+def _stale_cand(period_end: date, filing_date: date, form: str = "N-CSR") -> Candidate:
+    """A candidate whose filing date is deliberately not its period end."""
+    return Candidate(
+        fund_ticker=FUND.ticker,
+        metric=M_RETURN_1Y,
+        value=7.4,
+        unit="pct",
+        tier=SourceTier.HTML_TABLE,
+        provenance=Provenance(
+            fund_ticker=FUND.ticker,
+            form_type=form,
+            accession="0001-25-000009",
+            filing_date=filing_date,
+            period_end=period_end,
+            document_url="https://example.invalid/ncsr.htm",
+            locator="Financial Highlights, row 3",
+        ),
+        as_of=period_end,
+    )
+
+
+def test_cadence_blank_names_form_period_filing_date_and_limit():
+    """CCLFX's real shape, and the four facts Lara has to answer on in the room."""
+    r = reconcile_metric(
+        FUND,
+        M_RETURN_1Y,
+        [_stale_cand(date(2025, 3, 31), date(2025, 6, 5))],
+        date(2025, 12, 31),
+    )
+    detail = r.suppression.detail
+    assert r.suppression.reason is SuppressionReason.STALE_BEYOND_LIMIT
+    assert "N-CSR" in detail
+    assert "period ended 2025-03-31" in detail
+    assert "filed 2025-06-05" in detail
+    assert f"{STALE_LIMIT_DAYS}d limit" in detail
+
+
+def test_cadence_age_is_measured_from_period_end_not_filing_date():
+    """The correction to the client's own draft wording.
+
+    Her proposed label said "filed 275 days prior to anchor date". It is the
+    period end that sits 275 days back; the filing is 209. Decision D makes a
+    source eligible on the period it covers, so a label that quotes the filing
+    date as the distance describes a rule the system does not implement -- and
+    it fails on the first follow-up question in a board meeting.
+    """
+    r = reconcile_metric(
+        FUND,
+        M_RETURN_1Y,
+        [_stale_cand(date(2025, 3, 31), date(2025, 6, 5))],
+        date(2025, 12, 31),
+    )
+    assert "275d behind the 2025-12-31 anchor" in r.suppression.detail
+    assert "209d" not in r.suppression.detail  # the filing-date distance
+
+
+def test_terms_metric_stale_label_does_not_claim_a_period_end():
+    """A fee rate's clock is the last amendment-capable filing, not a period."""
+    cand = _stale_cand(date(2024, 12, 31), date(2025, 2, 14), form="10-K")
+    cand.terms_clock = date(2025, 1, 31)
+    r = reconcile_metric(FUND, M_RETURN_1Y, [cand], date(2026, 8, 31))
+    detail = r.suppression.detail
+    assert r.suppression.reason is SuppressionReason.STALE_BEYOND_LIMIT
+    assert "no amendment to this rate through 2025-01-31" in detail
+    assert "period ended" not in detail
+
+
+def test_cadence_blank_without_a_period_end_falls_back_to_the_as_of():
+    cand = _stale_cand(date(2025, 3, 31), date(2025, 6, 5))
+    object.__setattr__(cand.provenance, "period_end", None)
+    r = reconcile_metric(FUND, M_RETURN_1Y, [cand], date(2025, 12, 31))
+    assert "dated 2025-03-31" in r.suppression.detail
+
+
 def test_not_applicable_outranks_an_extractor_notice():
     """KREF's case: nothing to be stale about if the concept is not published."""
     notices = SuppressionLog()

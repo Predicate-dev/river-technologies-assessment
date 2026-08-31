@@ -240,12 +240,21 @@ def _resolve_within_basis(
         values = [chosen.value] + [c.value for c in losing]
         mid = sorted(values)[len(values) // 2] or 1.0
         spread = (max(values) - min(values)) / abs(mid) * 100.0
+        def _describe(cl: list[Candidate]) -> str:
+            marker = (
+                " superseded" if any("superseded_rate" in c.flags for c in cl) else ""
+            )
+            until = next(
+                (c.effective_until for c in cl if c.effective_until), None
+            )
+            if marker and until:
+                marker += f" as of {until.isoformat()}"
+            return f"{cl[0].value:.4g}{marker} ({_independent_count(cl)})"
+
         rationale = (
             f"kept {chosen.value:.4g}: agreed on by {_independent_count(winner)} "
             f"independent extraction(s) vs "
-            + ", ".join(
-                f"{cl[0].value:.4g} ({_independent_count(cl)})" for cl in clusters[1:]
-            )
+            + ", ".join(_describe(cl) for cl in clusters[1:])
             + f"; chosen source {chosen.tier.value}"
             + (f", flags {chosen.flags}" if chosen.flags else ", no flags")
         )
@@ -263,6 +272,46 @@ def _resolve_within_basis(
             chosen.fund_ticker, metric, [round(v, 4) for v in values], chosen.value, spread,
         )
     return chosen, others, conflict
+
+
+def _stale_detail(chosen: Candidate, age_days: int, reference_date: date) -> str:
+    """Name the source that aged out, not just the fact that something did.
+
+    Lara asked for this in the room: a cadence blank must be answerable without
+    her going back to the filing. The four facts a board question can land on --
+    which document, what period it covers, when it was filed, and the line it
+    crossed -- all go on the cell.
+
+    The distinction the label must not blur: `age_days` runs from the period end
+    to the reporting anchor, NOT from the filing date. Those differ by months
+    (CCLFX's March-year-end report is filed in the summer), and the client's own
+    draft wording had it as "filed 275 days prior", which a single follow-up
+    question in a board meeting would have exposed. Decision D is that a source
+    is eligible on the period it covers, whenever it happened to be filed.
+
+    Terms metrics get their own sentence: their clock is the last filing that
+    could have amended the rate, so "period ended" would describe the wrong
+    date entirely.
+    """
+    prov = chosen.provenance
+    form = prov.form_type or "source"
+    tail = f"{age_days}d behind the {reference_date.isoformat()} anchor, beyond the {STALE_LIMIT_DAYS}d limit"
+
+    if chosen.terms_clock is not None:
+        return (
+            f"{form} carries no amendment to this rate through "
+            f"{chosen.terms_clock.isoformat()}; {tail}"
+        )
+
+    if prov.period_end is not None:
+        period = f"for period ended {prov.period_end.isoformat()}"
+    elif chosen.as_of is not None:
+        period = f"dated {chosen.as_of.isoformat()}"
+    else:
+        period = "with no period stated"
+
+    filed = f" (filed {prov.filing_date.isoformat()})" if prov.filing_date else ""
+    return f"{form} {period}{filed} is {tail}"
 
 
 def _suppress(metric_obj: ResolvedMetric, notice: Suppression) -> ResolvedMetric:
@@ -426,10 +475,7 @@ def reconcile_metric(
                 fund_ticker=fund.ticker,
                 metric=metric,
                 reason=SuppressionReason.STALE_BEYOND_LIMIT,
-                detail=(
-                    f"most recent reported figure is {age_days}d old, beyond the "
-                    f"{STALE_LIMIT_DAYS}d limit"
-                ),
+                detail=_stale_detail(chosen, age_days, reference_date),
                 as_of=chosen.as_of,
                 internal_note=(
                     f"suppressed value was {chosen.value:.4g} {unit} "
