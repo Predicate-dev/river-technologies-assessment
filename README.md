@@ -28,17 +28,6 @@ Python 3.11+ (developed on 3.12). First run downloads ~150MB of filings and
 takes roughly 3–5 minutes; every subsequent run is served from `.cache/` and
 completes in seconds.
 
-Two files land in `output/`:
-
-| File | What it is |
-| --- | --- |
-| `benchmark_table.md` | The board table in the PMs' layout, plus the conflict log and the reason for every blank cell. Divergences from their original slide — two leverage rows, fee and hurdle separated — are documented in `docs/board_deck_excerpt.md`. |
-| `benchmark_report.docx` | The IC committee's Word document: benchmark table, coverage, conflicts, comparison and a provenance appendix. Blank cells carry their reason here too — the Word version must never look more complete than the evidence. |
-| `apex_vs_peers.md` | Peer median, range and ordering per metric, plus Apex's delta and rank. Apex-versus-peer deltas are withheld until the basis of the client's own column is confirmed; peer-to-peer statistics do not depend on it and render today. |
-| `nav_trend.md` | NAV per share over the trailing window, on a common semi-annual footing with each fund's actual reporting dates labelled. |
-| `coverage_breakdown.md` | Every cell classified by who owns the gap: reported, ours to close, cadence-limited, blocked on a client decision, or structurally unavailable. |
-| `audit_trail.csv` | One row per candidate value the pipeline found — winners *and* rejects — with source tier, filing accession, in-document locator, verbatim excerpt, transforms applied, flags raised, and the confidence score inputs. |
-
 ### Scope-update features
 
 ```bash
@@ -50,8 +39,6 @@ python -m apexridge --find "Cliffwater Corporate Lending"
 python -m apexridge --add-cik 1287750          # adds Ares Capital to the set
 python -m apexridge --add-cik 1287750 --save-peers peers.json
 python -m apexridge --peers peers.json         # reuse a saved peer set
-
-# Word output lands in output/benchmark_report.docx on every run
 ```
 
 ### Options
@@ -78,6 +65,31 @@ Tests cover the data-correctness path and the failure modes drawn from real
 filing text — distribution-period arithmetic, month attribution, anchoring and
 eligibility, superseded and historical fee rates, hurdle annualization, and the
 blank-cell precedence rules. Glue and I/O are deliberately untested.
+
+## Deliverables
+
+Every run writes the full set to `output/` (override the directory with
+`--out <dir>`). These are the files to open:
+
+| Path | What it is |
+| --- | --- |
+| [`output/benchmark_report.docx`](output/benchmark_report.docx) | **The main deliverable.** The IC committee's Word document: benchmark table, coverage, conflicts, comparison and a provenance appendix. Blank cells carry their reason here too — the Word version must never look more complete than the evidence. |
+| [`output/benchmark_table.md`](output/benchmark_table.md) | The board table in the PMs' layout, plus the conflict log and the reason for every blank cell. Divergences from their original slide — two leverage rows, fee and hurdle separated — are documented in [`docs/board_deck_excerpt.md`](docs/board_deck_excerpt.md). |
+| [`output/apex_vs_peers.md`](output/apex_vs_peers.md) | Peer median, range and ordering per metric, plus Apex's delta and rank. Apex-versus-peer deltas are withheld until the basis of the client's own column is confirmed; peer-to-peer statistics do not depend on it and render today. |
+| [`output/nav_trend.md`](output/nav_trend.md) | NAV per share over the trailing window, on a common semi-annual footing with each fund's actual reporting dates labelled. |
+| [`output/coverage_breakdown.md`](output/coverage_breakdown.md) | Every cell classified by who owns the gap: reported, ours to close, cadence-limited, blocked on a client decision, or structurally unavailable. |
+| [`output/audit_trail.csv`](output/audit_trail.csv) | One row per candidate value the pipeline found — winners *and* rejects — with source tier, filing accession, in-document locator, verbatim excerpt, transforms applied, flags raised, and the confidence score inputs. |
+
+Two machine-readable siblings are written alongside the Markdown for anything
+downstream: [`output/coverage_breakdown.csv`](output/coverage_breakdown.csv)
+(also the input to `--compare-to`) and
+[`output/nav_trend.csv`](output/nav_trend.csv).
+[`output/regression_report.md`](output/regression_report.md) is written only on
+runs that pass `--compare-to`.
+
+The written narrative sits in `docs/`:
+[`docs/solution-brief.md`](docs/solution-brief.md) for the business summary and
+[`docs/technical-approach.md`](docs/technical-approach.md) for the full model.
 
 ## What it does
 
@@ -255,8 +267,8 @@ hash seed.
 
 Prototype. 144 tests passing, running against live EDGAR at the Q4 2025 anchor.
 30 of 40 competitor cells populate; the rest blank with a stated reason, broken
-down cell by cell in `output/coverage_breakdown.md`. Known gaps and their causes
-— some ours, some structural to the filers, and some possibly outside EDGAR
-entirely — are in
-[`docs/technical-approach.md`](docs/technical-approach.md) §6 and
-[`NOTES/questions.md`](NOTES/questions.md).
+down cell by cell in [`output/coverage_breakdown.md`](output/coverage_breakdown.md).
+No gap remains that further extraction would close — four cells are cadence-limited
+by the client's six-month staleness rule and six are figures the filer does not
+publish. Causes are in [`docs/technical-approach.md`](docs/technical-approach.md)
+§5, and the open client items in [`NOTES/questions.md`](NOTES/questions.md).
