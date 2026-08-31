@@ -3,7 +3,7 @@
 ## Window 1 (asked before schema lock)
 
 1. **KREF classification.** ~~Brief calls it a BDC; it is a mortgage REIT~~
-   **ANSWERED PROVISIONALLY (Window 1) — OPEN, escalated to CIO.**
+   **RESOLVED (Window 1), pending CIO confirmation of the peer list itself.**
    Partner chose (b): keep KREF, populate what maps, explicit caveat in the
    output that it is a REIT and net return is not apples-to-apples. Partner
    will not finalise unilaterally — the CIO put KREF on the list, so any
@@ -11,10 +11,11 @@
    - **Follow-up I owe the partner (answered in-window):** it is not one
      failure mode, it splits by row. See NOTES/decisions.md "KREF row-level
      mapping".
-   - **Still open for the CIO (Window 2 unless he answers sooner):** on the
-     three net-return rows, does he want (i) blank + stated reason, or
-     (ii) market total shareholder return shown in a visibly separate,
-     differently-labelled row? Not the same cell either way.
+   - **CLOSED:** partner chose blank + stated reason on the three net-return
+     rows. "A blank with an explanation is defensible to the board. A filled
+     cell with the wrong definition is not." No TSR substitution.
+   - Partner is taking 1a and 1c to the CIO in one conversation. Neither
+     blocks the build.
    - **1a. What is KREF on the list FOR? — ASKED, partner does not know.**
      CIO set the peer list before the partner was looped in and did not walk
      through it name by name. Partner's *guess* (explicitly not from the CIO):
@@ -36,11 +37,20 @@
      peer => blank + reason, never a substituted near-metric), or adjudicate
      cell by cell each quarter? The first is a system; the second is the manual
      process they are paying to remove.
-2. **Fiscal-year misalignment.** CCLFX FYE Mar, GBDC FYE Sep, TAKIX/KREF Dec,
-   Apex calendar. As-reported (current deck footnote 1) or aligned to nearest
-   period-end before Apex quarter close? And: stale figure with age flag, or
-   blank cell?
-   - Default if unanswered: as-reported + age flag.
+2. **Fiscal-year misalignment. RESOLVED (Window 1).** As-reported, with the
+   as-of date rendered *on the cell*, not in footnote 1. Partner accepted the
+   argument that a half-aligned row (recomputable for CCLFX/TAKIX from N-PORT
+   monthlies, not for GBDC/KREF) is worse than an honest as-reported one.
+   - **Staleness: hard line at six months.** Older than that => cell blank,
+     carrying the as-of date of the last available figure. Blanks are not
+     empty; they carry provenance.
+   - **Cost asymmetry, stated by the partner and now governing the whole
+     confidence model:** last year a misread basis point on a *leverage ratio*
+     reached a board presentation and was caught only afterwards. That incident
+     is why this engagement exists. "A blank cell generates a question I can
+     answer. A confident wrong number generates a question I cannot, and it
+     follows me." System is to be conservative: flag uncertainty, suppress when
+     stale, never fill a cell to avoid a gap.
 3. **Share class.** Deck footnote 3 says institutional for CCLFX/TAKIX.
    N-PORT gives fund-level returns cheaply; class-level needs narrative
    parsing. Hard requirement or is labelled fund-level acceptable?
