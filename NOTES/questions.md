@@ -122,7 +122,13 @@ far governs the peers; the anchor of the comparison has never been defined.**
   2025, period end 2025-12-31. Staleness = anchor - period_end; a source is
   eligible if period_end <= anchor, regardless of when it was filed (TAKIX's
   N-CSR for 2025-12-31 was filed 2026-02-27 and is point-in-time correct for a
-  Q4 2025 deck prepared today). NOTE: this largely dissolves CIO item B for
+  Q4 2025 deck prepared today). CORRECTED 2026-08-31: an earlier version of this note claimed the cadence
+  gap did not bite the Q4 2025 deck. It does. Four CCLFX cells blank on
+  stale_beyond_limit in the current run -- the 1Y, 3Y and 5Y returns and the
+  distribution yield -- all against the N-CSR for period 2025-03-31, which is
+  275 days behind the anchor. CIO item B is live for THIS deck, not a future
+  one, and the partner should not be told otherwise. Original note follows.
+  NOTE: this largely dissolves CIO item B for
   *this* deck — CCLFX's N-CSRS for 2025-09-30 is three months inside the
   anchor. The cadence gap is real but bites future quarters, not Q4 2025. Tell
   the partner so he does not escalate it as urgent. Original framing: The staleness rule is anchored ambiguously.
@@ -159,6 +165,42 @@ far governs the peers; the anchor of the comparison has never been defined.**
   and flag it. Worth telling the partner explicitly: this is the exact shape of
   the misread that caused his board incident, and it is now a named, tested
   case rather than a matter of analyst attention.
+
+## Window 3 CLOSED — outcomes
+
+All four carried items resolved in-window; nothing on the escalation list is
+still with the client except two she owes by date.
+
+- **1. Leverage definition. RESOLVED.** Both bases, rendered as two separate
+  rows (regulatory, economic). KREF: non-recourse securitisation out, repo in.
+  Per-filer extraction work, ~half a day. Unblocks TAKIX's blank leverage cell.
+- **2. Apex column basis. RESOLVED.** Institutional, net of both management and
+  incentive fees. `APEX_BASIS_CONFIRMED` flips; peer deltas re-enable.
+- **3. Fee-clock sign-off. RESOLVED.** Client accepts the weaker, true claim:
+  "no amendment disclosed through <date>". Already the implemented wording.
+- **4. Cell-by-cell source review. RETURNED, and its conclusion corrected.**
+  See NOTES/decisions.md -- six of the eight reviewed cells are already
+  EDGAR-populated; nothing moved to structural. Client is re-running the
+  question against the 13 expanded-metric cells, which is where the ceiling
+  question actually lives.
+- **11. Coverage acceptability. RESOLVED.** 26 of 36 with every blank attributed
+  is presentable. "A blank with a reason is a defensible position. What I cannot
+  defend is a blank that looks like a system failure."
+
+### Still owed by the client (dated)
+
+- **Weighted average spread definition** -- all-in yield vs spread over
+  benchmark. From the PMs, this week. Extraction is per-filer table work
+  regardless of which she picks.
+- **House Word template, fonts, logo** -- promised same day.
+- **Analyst answer on the 13 expanded-metric cells** -- no date given.
+
+### Still open, not blocking
+
+- **5. Do the PMs want to author metric definitions themselves?** Workflow
+  preference, never answered. Option (b) exists either way.
+- **Peer-list intent (Window 1, 1a/1c) and policy-vs-adjudication (1b).** Went
+  to the CIO with the leverage question; only leverage came back.
 
 ## Window 3 (final) — the full list
 
