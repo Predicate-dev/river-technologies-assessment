@@ -102,7 +102,12 @@ def main(argv: list[str] | None = None) -> int:
         f"{len(result.notices)} blank(s) explained.",
         file=sys.stderr,
     )
-    print(f"Board table: {paths['board']}\nAudit trail: {paths['audit']}", file=sys.stderr)
+    print(
+        f"Board table: {paths['board']}\n"
+        f"Audit trail: {paths['audit']}\n"
+        f"Coverage:    {paths['coverage']}",
+        file=sys.stderr,
+    )
     return 0
 
 

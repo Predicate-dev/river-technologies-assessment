@@ -391,3 +391,71 @@
   primary; GBDC 5Y blank with actual coverage stated. The flag in
   NOTES/questions.md recording them as unverified is now resolved -- they were
   genuinely her decisions.
+
+## Window 2 — Lara's rulings (confirmed, not consultant defaults)
+
+- **Fee timing: the rate in effect DURING the reporting quarter, not the current
+  rate.** "The PMs are benchmarking that period's performance against that
+  period's fee burden." Affects GBDC (1.375% -> 1.0%) and TAKIX. The pipeline
+  currently resolves fee conflicts by source majority, which is the wrong
+  mechanism entirely for a rate change — majority vote on a time series is
+  meaningless. Extractor/reconcile lane.
+- **Two-tier incentive fees: show BOTH components, labelled.** GBDC's 15% and
+  20% are almost certainly income vs. capital-gains tiers, not a conflict.
+  "A single blended rate destroys information the PMs need, and 'we resolved a
+  conflict' when it was actually a structure is exactly the kind of silent
+  decision I do not want in the output." Reconcile must not collapse a
+  structure into a conflict.
+- **TAKIX drops out of the main table and becomes a footnote.** "A column with
+  one cell is not a comparison, it is noise, and a PM will ask why it is there."
+  What is absent and why must stay visible — the zero reported borrowings
+  against $2.2bn of liabilities especially. Render lane.
+- **Confidence floor holds at 0.40 for now.** She wants the blank breakdown
+  first; if coverage improves once the CIO items resolve, the floor question may
+  answer itself. Revisits with the PMs before production.
+- **Adoption test, stated by her:** if the blanks concentrate in TAKIX/KREF and
+  CCLFX/GBDC are substantially populated, the PMs will adopt. If CCLFX is
+  half-blank, "that is a different conversation."
+
+- **Blank taxonomy at the Q4 2025 anchor (17/36 populated).** The headline
+  number understates the position badly, because most blanks are OURS:
+  - *Structural, nothing to be done:* KREF x3 return rows; GBDC 5Y (NAV history
+    begins 2021-09-30); TAKIX leverage (pending the CIO's basis). = 5
+  - *Possibly ours:* TAKIX x3 class attribution — N-PORT carries unlabelled
+    class series, but N-CSR financial highlights DO name classes. Worth one
+    attempt before accepting it as structural.
+  - *Ours:* CCLFX 3Y/5Y (our 8-filing N-PORT depth cap; data is at EDGAR) and
+    8 x "no figure located" across CCLFX/TAKIX/KREF fee, NAV and yield fields
+    that are in filings already downloaded. = 11
+  So CCLFX's 3/9 fails Lara's adoption test, but all six of its blanks are our
+  extraction coverage, not Cliffwater's disclosure. The honest report is "not
+  yet, and the gap is ours" — not "the filings do not support it".
+- **"None charged" is extracted, not taken on the client's word (Window 2).**
+  Lara confirmed CCLFX charges no carry. Rather than encode her recollection,
+  the fee-table parser now treats the *absence* of an incentive row in a
+  demonstrably complete N-2 fee table (management fee row + total + other
+  expenses present) as affirmative evidence of none charged. Renders as
+  "none charged", not "0.00%" -- a fee of zero and a measured zero are
+  different statements on a slide. Flagged inferred_from_absence at 0.80.
+  Rejected a client-attested override tier: the point of the system is that
+  figures trace to filings.
+- **Coverage classification is by who owns the gap, not by count (Lara,
+  Window 2).** "The shape matters more than the count." Every empty cell is
+  labelled FILLED / OURS / CADENCE / CLIENT / STRUCTURAL. Corrected one
+  misclassification before it reached her: TAKIX's class-attribution failures
+  were marked STRUCTURAL, implying unfixable, when the class-level source
+  (N-CSR financial highlights) exists and simply is not built yet. Telling a
+  client a gap is permanent when it is our backlog is the same category of
+  error as reporting a wrong number.
+- **Build priority set by Lara (Window 2):** net returns, leverage, distribution
+  yield -- "the three the PMs act on in every quarterly conversation". Fees
+  matter but move rarely; NAV trend is context. Thin confidence gets fixed in
+  that order.
+- **NAV per share is an 8-quarter trend, not a point (Lara, Window 2).** The
+  board excerpt was a simplified version; the metric spec is authoritative.
+  Accepted as a materially larger extraction job for the interval funds.
+- **Pack is built ~2 weeks after quarter close (Lara, Window 2).** Ruling: run
+  on time with explicit gaps and expected filing dates rather than wait for
+  stragglers. "A partially populated table on time is more useful than a
+  complete one late." Makes the projected-filing-window machinery in
+  temporal.py load-bearing rather than decorative.

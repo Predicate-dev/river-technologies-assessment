@@ -168,6 +168,12 @@ FEE_ROW_LABELS: list[tuple[str, str]] = [
 ]
 
 
+# Rows whose presence means we are looking at a complete N-2 style fee table
+# rather than a fragment. Only then is the *absence* of an incentive fee row
+# evidence rather than a parsing miss.
+_FEE_TABLE_COMPLETE = (r"total annual", r"other expenses")
+
+
 def fee_tables(doc: Doc) -> list[Candidate]:
     """Fee rates from an expense table.
 
@@ -213,6 +219,31 @@ def fee_tables(doc: Doc) -> list[Candidate]:
                     )
                 )
                 break
+
+        # A complete fee table that lists a management fee and a total, but no
+        # incentive fee row, is affirmative evidence that none is charged --
+        # which is a different statement on a board slide from "we could not
+        # find it". Only claimed for a table we can see is complete; a fragment
+        # missing the row proves nothing.
+        labels = " ".join(r[0].lower() for r in rows)
+        complete = all(re.search(p, labels) for p in _FEE_TABLE_COMPLETE)
+        has_mgmt = any(re.match(r"(investment )?management fee", r[0].lower()) for r in rows)
+        has_incentive = "incentive" in labels
+        if complete and has_mgmt and not has_incentive and (M_INCENTIVE_FEE, 0.0) not in seen:
+            seen.add((M_INCENTIVE_FEE, 0.0))
+            out.append(
+                doc.candidate(
+                    M_INCENTIVE_FEE,
+                    0.0,
+                    unit="pct",
+                    tier=SourceTier.HTML_TABLE,
+                    locator=f"expense table @ char {pos}: no incentive fee row",
+                    excerpt=f"table rows: {'; '.join(r[0] for r in rows)}"[:400],
+                    basis={"fee_basis": "none_disclosed"},
+                    transforms=["absence of an incentive fee row in a complete fee table"],
+                    flags=["inferred_from_absence"],
+                )
+            )
     return out
 
 

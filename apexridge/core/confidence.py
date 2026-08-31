@@ -68,6 +68,9 @@ FLAG_PENALTIES: dict[str, float] = {
     # having re-read the rate inside the staleness window. Real evidence, but
     # weaker than a restatement -- a filer need not repeat an unamended fee.
     "rate_not_restated_within_window": 0.93,
+    # Reporting "none charged" from the absence of a row. Sound where the table
+    # is demonstrably complete, but weaker than reading a stated figure.
+    "inferred_from_absence": 0.80,
     "implausible_incentive_fee_rate": 0.35,
     "fee_denominator_unstated": 0.92,
 }

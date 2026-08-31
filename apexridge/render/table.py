@@ -69,7 +69,12 @@ def _cell_text(cell: Cell) -> str:
         detail = f" -- {cell.detail}" if cell.detail else ""
         return f"_blank: {reason}{detail}_"
 
-    parts = [f"**{format_value(cell.value, cell.unit)}**"]
+    # A fee of zero is a different statement from a measured zero, and "0.00%"
+    # invites a PM to read it as a computed figure. Say what it means.
+    if cell.value == 0.0 and cell.metric in ("incentive_fee_pct", "incentive_hurdle_pct"):
+        parts = ["**none charged**"]
+    else:
+        parts = [f"**{format_value(cell.value, cell.unit)}**"]
     if cell.confidence is None:
         # Client-supplied figures carry no confidence: we did not extract them
         # and have no evidence to score. Defaulting them to a grade would
@@ -273,8 +278,13 @@ def write_outputs(run: BenchmarkRun, outdir) -> dict[str, str]:
 
     out = Path(outdir)
     out.mkdir(parents=True, exist_ok=True)
+    from .coverage import coverage_frame, coverage_markdown
+
     board = out / "benchmark_table.md"
     audit = out / "audit_trail.csv"
+    coverage = out / "coverage_breakdown.md"
     board.write_text(board_markdown(run))
     audit_frame(run).to_csv(audit, index=False)
-    return {"board": str(board), "audit": str(audit)}
+    coverage.write_text(coverage_markdown(run))
+    coverage_frame(run).to_csv(out / "coverage_breakdown.csv", index=False)
+    return {"board": str(board), "audit": str(audit), "coverage": str(coverage)}
