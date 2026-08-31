@@ -207,7 +207,29 @@ still with the client except two she owes by date.
 Ordered by cost of guessing wrong. Everything below genuinely needs her; nothing
 here can be resolved by building.
 
-### Carried over — she owes these
+### ALL CLOSED — Window 3 delivered everything outstanding
+
+Nothing below is open. Retained as the record of what was asked and answered.
+
+**Closed in Window 3:** the CIO's leverage ruling (both bases; KREF non-recourse
+securitisation out, repo in; two display rows, her words: "a single row with a
+basis note is exactly the kind of thing a tired reader misses"); the Apex column
+basis (institutional, net of both management and incentive fees); the analyst
+sourcing review; the fee-clock label; superseded-rate labelling; NAV footnote
+wording; custom-metric authorship (we write the definitions); weighted average
+spread NOT authorised pending a definition; Word house template to follow.
+
+**One thing her confirmation did not cover, and the system now says so.** She
+confirmed her column's share class and fee treatment. That unblocks returns,
+fees and yield. It does not say which leverage basis her single unlabelled
+`leverage_ratio_dte` column uses, and leverage is regulatory-vs-economic rather
+than a share-class question. Peers now report two bases differing by more than a
+factor of two (CCLFX 0.32x regulatory vs 0.79x economic), so her leverage delta
+is withheld and the cell carries "leverage basis unconfirmed". This is the last
+open basis question in the system and it was never asked, because it only became
+visible once leverage split into two rows.
+
+### Carried over — she owes these (ALL NOW DELIVERED)
 
 1. **CIO's leverage definition.** Regulatory vs. economic, and whether KREF's
    non-recourse securitisation and repo are in scope. TAKIX's leverage cell is

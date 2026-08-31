@@ -712,3 +712,67 @@ reached this session relayed by the parallel session, not heard directly.
 
 Due from her today: leverage definition with the KREF perimeter, the Apex column
 basis, and the analyst sourcing results.
+
+## Window 3 close — client rulings and one corrected inference
+
+- **Cadence blanks now name their source.** `_stale_detail` puts form type,
+  period end, filing date and the limit on the cell. Chose period-end-to-anchor
+  as the stated distance and rejected the client's own draft wording ("filed 275
+  days prior"), which would have described a rule the system does not implement:
+  decision D makes a source eligible on the period it covers, whenever filed.
+  CCLFX's report is 275d back on period end but 209d on filing date, so the
+  wrong version fails on the first follow-up question in the room.
+
+- **Leverage: two rows, not one.** CIO ruled both bases. Client chose separate
+  regulatory and economic rows over a single row carrying a basis note --
+  "exactly the kind of thing a tired reader misses". Rejected the one-row form
+  for the same reason the engagement exists. KREF: non-recourse securitisation
+  excluded, repo included. This is the only ruling implying per-filer extraction
+  rather than a config switch.
+
+- **Apex column basis confirmed:** institutional share class, net of both
+  management and incentive fees. Unblocks every peer-minus-Apex delta;
+  `APEX_BASIS_CONFIRMED` flips from False.
+
+- **Fee-clock claim accepted at its true strength.** Client accepts "no
+  amendment disclosed through <date>" rather than "confirmed in force at
+  <date>". A filer need not restate an unamended fee, so the stronger phrasing
+  claimed more than the filings support. Wording already implemented this way.
+
+- **Sourcing review: the client's conclusion was wrong and was corrected before
+  it reached leadership.** She read "analyst sourced this from a fund website"
+  as "this is not in EDGAR" and moved six cells to structural. Six of the eight
+  are populated from EDGAR in the current run; the remaining two blank for
+  unrelated reasons (CCLFX hurdle -- no incentive fee exists, so no hurdle;
+  CCLFX distribution yield -- cadence). Net movement to structural: zero. The
+  review answers where an analyst went, not what a filing contains. Recorded
+  because the same conflation will recur every quarter.
+  - Genuine yield from it: TAKIX incentive fee, unsourced in the client's pack,
+    is now EDGAR-sourced at 15.0% (2025-04-28) with provenance -- their
+    highest-risk cell closed. And CCLFX incentive fee is a real conflict: their
+    pack carries a website figure, the filings say no incentive fee is charged.
+    Filing wins; the client is briefing the CIO that the pack was wrong.
+  - The review was also aimed at the wrong cells. The 13 possibly-not-in-EDGAR
+    cells are the expanded metrics (non-accrual x3 funds x2 bases, weighted
+    average spread x4, GBDC portfolio turnover, TAKIX/KREF total annual
+    expenses). Client is re-running the question against that list.
+
+- **Apex's leverage basis is gated separately from the rest of her column.**
+  Her Window 3 confirmation covered share class and fee treatment, which
+  legitimately unblocked returns, fees and yield. It said nothing about which
+  leverage basis her single unlabelled ratio uses. With the peers now on two
+  bases that differ by more than a factor of two, publishing a delta between her
+  ratio and a median of one of them would be a materially wrong number on the
+  exact metric behind the board incident. `APEX_LEVERAGE_BASIS_CONFIRMED` is a
+  separate flag, defaulting False; the value renders, the delta does not.
+- **Apex's ratio maps to the regulatory row only, not both.** Considered showing
+  it against both rows and comparing against neither; rejected in favour of the
+  parallel session's sharper argument -- reusing a borrowings-over-equity figure
+  on the economic row would put a number understated by construction beside
+  peers computed the other way, which flatters the house. The economic row's
+  Apex cell blanks with that reason.
+- **Client rulings relayed between sessions were verified with the user before
+  being built on.** `APEX_BASIS_CONFIRMED` publishes every peer delta, and it
+  was flipped on a client confirmation this session did not witness. The
+  verification cost one question and the downside of being wrong was the one
+  outcome the client was most explicit about. Confirmed genuine.
