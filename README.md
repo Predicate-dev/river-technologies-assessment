@@ -32,7 +32,7 @@ Two files land in `output/`:
 
 | File | What it is |
 | --- | --- |
-| `benchmark_table.md` | The board table, in the layout the PMs already read, plus the conflict log and the reason for every blank cell. |
+| `benchmark_table.md` | The board table in the PMs' layout, plus the conflict log and the reason for every blank cell. Divergences from their original slide — two leverage rows, fee and hurdle separated — are documented in `docs/board_deck_excerpt.md`. |
 | `benchmark_report.docx` | The IC committee's Word document: benchmark table, coverage, conflicts, comparison and a provenance appendix. Blank cells carry their reason here too — the Word version must never look more complete than the evidence. |
 | `apex_vs_peers.md` | Peer median, range and ordering per metric, plus Apex's delta and rank. Apex-versus-peer deltas are withheld until the basis of the client's own column is confirmed; peer-to-peer statistics do not depend on it and render today. |
 | `nav_trend.md` | NAV per share over the trailing window, on a common semi-annual footing with each fund's actual reporting dates labelled. |

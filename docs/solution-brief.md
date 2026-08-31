@@ -34,10 +34,10 @@ The three additions from today's call are covered below.
 ## The judgment calls, in business terms
 
 **We made the system prefer a gap to a guess** — your rule, applied literally. Of
-40 competitor cells, 28 populate and 12 are blank, and none of the blanks is now
+40 competitor cells, 30 populate and 10 are blank, and none of the blanks is now
 ours to close: four are figures that exist but fall outside your six-month
-staleness line, one is withheld pending your leverage definition, and five are
-figures the competitor does not publish at all.
+staleness line, and six are figures the competitor does not publish at all.
+Nothing is any longer waiting on a decision from you.
 
 **Do not read the old pack's completeness as accuracy.** This is the first
 account of which cells were ever actually sourced from a filing. Some filled by

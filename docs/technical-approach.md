@@ -157,14 +157,17 @@ that leaves the building must not look more complete than the evidence.
 
 ## 5. Limitations
 
-- **26 of 36 cells populate**, classified in `output/coverage_breakdown.md` by
+- **30 of 40 cells populate**, classified in `output/coverage_breakdown.md` by
   who owns each gap. **Nothing remains that further extraction would close**:
-  4 are cadence-limited, 1 is blocked on your leverage definition, 5 are
-  structural. Every metric reachable from EDGAR for these filers is extracted.
+  4 are cadence-limited and 6 are structural. Both the "ours to close" and
+  "blocked on a client decision" buckets are empty. Every metric reachable from
+  EDGAR for these filers is extracted.
 - **That is contingent on EDGAR being the whole scope.** Analysts also source
-  from fund websites and IR pages. If cells in the manual pack came from there,
-  they are outside this system's reach by design, not by omission — and the
-  recommended treatment if they come into scope is in §6.
+  from fund websites and IR pages. Your sourcing review found six such cells,
+  but six of those are already EDGAR-populated in the current run — the review
+  records where an analyst went, not what the filing contains, so nothing moved
+  to structural on that basis. The recommended treatment if web sources come
+  formally into scope is in §6.
 - **CCLFX's cadence gap is live.** Its March year-end puts the annual report 275
   days behind a Q4 2025 anchor, past the six-month line, so three cells blank on
   your rule rather than any failure of ours. Recurs annually.

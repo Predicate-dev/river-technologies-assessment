@@ -2,8 +2,11 @@
 
 Two outputs, deliberately separate:
 
-  * **The board table** reproduces the layout the PMs already read
-    (`docs/board_deck_excerpt.md`), one column per fund. Every filled cell
+  * **The board table** follows the layout the PMs already read
+    (`docs/board_deck_excerpt.md`) -- one column per fund, metrics as rows --
+    with documented divergences annotated in that file: leverage split into two
+    rows per the CIO's ruling, fee and hurdle separated, and every cell carrying
+    its evidence. Every filled cell
     carries its confidence and as-of date; every blank carries its reason.
     Nothing on this table requires the reader to look up a footnote to know
     what basis a number is on -- that was an explicit client ruling, and the
@@ -241,7 +244,12 @@ def demoted_footnote(grid: dict[str, dict[str, Cell]], ticker: str, run: "Benchm
 
 
 def board_markdown(run: BenchmarkRun) -> str:
-    """The board table, in the layout the PMs already read."""
+    """The board table, in the PMs' layout with the documented divergences.
+
+    See docs/board_deck_excerpt.md for what differs from their original slide
+    and why -- each difference is a client ruling or a limitation their
+    hand-assembled format could not express.
+    """
     grid = build_cells(run)
     kept, demoted = partition_columns(grid, list(run.results))
     columns = [APEX_COLUMN] + kept
