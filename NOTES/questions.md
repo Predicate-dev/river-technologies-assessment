@@ -160,7 +160,67 @@ far governs the peers; the anchor of the comparison has never been defined.**
   the misread that caused his board incident, and it is now a named, tested
   case rather than a matter of analyst attention.
 
-## Window 3 (pre-delivery)
+## Window 3 (final) — the full list
+
+Ordered by cost of guessing wrong. Everything below genuinely needs her; nothing
+here can be resolved by building.
+
+### Carried over — she owes these
+
+1. **CIO's leverage definition.** Regulatory vs. economic, and whether KREF's
+   non-recourse securitisation and repo are in scope. TAKIX's leverage cell is
+   blank and stays blank. The only open item implying per-filer extraction work
+   rather than a config change, and the same metric class as the board incident.
+2. **The basis of Apex's own column.** Share class, and net of which fees. Still
+   blocks every peer-minus-Apex delta. Now a one-line change when it lands
+   (`APEX_BASIS_CONFIRMED`) rather than new work.
+3. **Fee-clock sign-off.** She asked to confirm the amendment-based clock holds
+   for the other funds before production. It is built and running. Also confirm
+   she accepts the weaker claim it can support: "no amendment disclosed through
+   <date>", not "confirmed in force at <date>" -- a filer need not restate an
+   unamended fee.
+4. **Cell-by-cell source review.** Which manual-pack cells came from fund
+   websites or IR pages rather than filings. The only thing that could still move
+   the coverage picture, and it can only shrink scope, not grow it.
+
+### New, from the scope update
+
+5. **Who authors a custom metric definition?** This is the biggest one. A metric
+   found in a financial-highlights table needs only a row label -- a PM could
+   write that. A metric living in prose needs a regex, which a PM will not write.
+   Three options: (a) they send us the metric and we add the definition, (b) we
+   build an analyst-facing definition format that avoids regex, (c) custom
+   metrics are limited to what tables and tagged data can reach. The feature as
+   built assumes (a). If they expect (b), that is real additional work and should
+   be scoped now rather than discovered at the demo.
+6. **Weighted average spread: define it.** It got zero coverage, and not for
+   want of trying -- filers state it inconsistently, some as spread over a
+   benchmark and some as all-in yield, and the two are not the same number. This
+   is the same shape of question as the leverage definition and needs the same
+   kind of answer before it can be extracted.
+7. **Non-accrual rate: cost or fair value?** Filers state both in one sentence
+   ("were 0.6% and 0.3%, respectively"). We chose fair value and labelled it.
+   Cheap to confirm, and wrong if unconfirmed.
+8. **Fund browser: curated set or arbitrary search?** SEC's ticker files omit
+   non-traded interval funds entirely, and the name-search endpoint rate-limits
+   heavily. Entering a CIK always works. If a curated set they extend is
+   acceptable, the feature is done; if they need reliable name search across all
+   fund types, that is EDGAR full-text search integration and more work.
+9. **Should an added fund persist between runs?** `--add-cik` is currently
+   per-run. A saved peer set is a small change but a different mental model, and
+   it raises who owns the list -- the CIO owns the peer list today.
+10. **Does the Word document need their house template?** It is attached to a
+    board deck. Currently generic Word styling. A template, fonts or a logo is
+    trivial to apply and impossible to guess.
+
+### If there is time
+
+11. **Coverage acceptability.** Never actually answered -- she asked for the
+    breakdown instead, and now has it. 26 of 36 with every blank attributed. Is
+    that presentable to the board, or does the emptiness itself become the
+    question?
+
+## Window 3 (superseded — see the full list above)
 
 - Confidence model sign-off, output format / handoff, production rollout
   assumptions for the technical doc.

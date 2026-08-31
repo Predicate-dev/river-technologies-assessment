@@ -29,22 +29,29 @@ fee examples), TAKIX hurdle (6%, was losing to an adjacent catch-up rate),
 CCLFX hurdle (reclassified from gap to inapplicable), KREF management fee
 (1.50%, quoted quarterly on adjusted equity).
 
+## Scope update — all three delivered
+
+- **Custom metrics.** Declarative registry; a metric is a JSON definition, not
+  code. `metrics/custom_metrics.json` ships the three named. Portfolio turnover
+  and GBDC's non-accrual rate extract with no code change.
+- **Fund discovery.** `--find` searches and classifies, `--add-cik` adds. Refuses
+  filers it cannot classify. Ares Capital added cold populates 8 of 9.
+- **Word output.** `output/benchmark_report.docx` on every run, blanks carrying
+  their reasons.
+
+Coverage with custom metrics enabled: 28 of 48 cells.
+
 ## For the last consultation window
 
-Only these need her. Nothing here can be resolved by building.
+Eleven questions, in NOTES/questions.md under "Window 3 (final)". The four
+carried over are unchanged. The six new ones come from the scope update, and one
+of them is bigger than it looks:
 
-1. **The two answers she owes.** CIO leverage definition; and the basis of Apex's
-   own column (share class, net of which fees) — still blocking every
-   peer-minus-Apex delta.
-2. **Fee-clock sign-off.** She asked to confirm it holds for the other funds
-   before production. Built and running. Confirm she accepts the weaker claim it
-   supports: "no amendment disclosed through <date>", not "confirmed in force".
-3. **Cell-by-cell source review.** Which manual-pack cells came from fund
-   websites or IR pages rather than filings. This is the only thing that could
-   change the coverage picture, and it can only shrink scope, not grow it.
-4. **Corrections to pass her.** GBDC and KREF publish NAV *quarterly*, not
-   monthly. And both GBDC incentive tiers are 15.0% — if 15/20 reached her as a
-   two-tier structure, the example is wrong; 20% is the superseded rate.
+**Who authors a custom metric definition?** A highlights-table metric needs a row
+label a PM could write. A prose metric needs a regex a PM will not write. The
+feature as built assumes they send us the metric and we add the definition. If
+they expect a self-service format, that is real additional work and should be
+scoped before the demo rather than discovered at it.
 
 ## Known debt
 

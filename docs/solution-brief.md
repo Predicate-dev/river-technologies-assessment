@@ -29,32 +29,31 @@ leverage ratio reached a board deck last year.
 cells left blank. Smaller work, and the part where judgment is worth something. A
 person still signs off; this replaces the typing, not the review.
 
+The three additions from today's call are covered below.
+
 ## The judgment calls, in business terms
 
 **We made the system prefer a gap to a guess** — your rule, applied literally. Of
-36 competitor cells, 26 populate and 10 are blank. Each blank is attributed, and
-none of them is now ours: four are figures that exist but fall outside your
-six-month staleness line, one is withheld pending your leverage definition, and
-five are figures the competitor does not publish at all. Every metric reachable
-from EDGAR for these four filers is extracted.
+36 competitor cells, 26 populate and 10 are blank, and none of the blanks is now
+ours to close: four are figures that exist but fall outside your six-month
+staleness line, one is withheld pending your leverage definition, and five are
+figures the competitor does not publish at all.
 
-**A caution before you compare this to the old pack.** Do not assume the manual
-deck was accurate because it had no blanks. This is not adding gaps to a complete
-picture; it is the first honest accounting of which cells were ever actually
-sourced from a filing. Some cells filled by hand every quarter appear to have come
-from fund websites and IR pages rather than SEC filings — not wrong, but a
-different evidentiary standard, and nothing recorded which was which.
+**Do not read the old pack's completeness as accuracy.** This is the first
+account of which cells were ever actually sourced from a filing. Some filled by
+hand every quarter appear to have come from fund websites rather than SEC
+filings — not wrong, but a different evidentiary standard, and nothing recorded
+which was which.
 
 **We refused to substitute near-metrics.** KREF is described as a BDC; it is a
-mortgage REIT, publishing no fund-style net return and striking its fee on a
-different base. We could have filled its return rows with total shareholder return
-and the table would have looked complete. Those rows are blank and labelled
-instead. *A complete-looking table comparing two different things is the failure
-this system exists to prevent.*
+mortgage REIT and publishes no fund-style net return. Filling its return rows
+with total shareholder return would have made the table look complete. Those rows
+are blank and labelled instead — a complete-looking table comparing two different
+things is the failure this system exists to prevent.
 
 **We separated "sources disagree" from "the definition is open."** TAKIX reports
 zero borrowings while carrying $2.2bn of liabilities. A figure is computable, but
-which one is right depends on a definition now with your CIO. The system will not
+which is right depends on a definition now with your CIO, and the system will not
 answer that by quietly picking one.
 
 ## What it caught
@@ -65,15 +64,12 @@ From the live run, not hypotheticals:
   correct, from a different offering document, and wrong for this purpose. The
   true rate is 1.0%. A system trusting "official structured data" ships it.
 - **GBDC's annual report states both its old and current fee in one sentence** —
-  "reduced from 1.375% to 1.0%", "from 20.0% to 15.0%". Reading the first rather
-  than the second is precisely the misread that reached your board.
-- **TAKIX's prospectus quotes a fee retired in 2020**, and **KREF's is quoted
-  quarterly** on a different asset base — 0.375% as printed, against peers
-  quoting ~1.0%. It is 1.50% a year.
+  "reduced from 1.375% to 1.0%". Reading the first is precisely the misread that
+  reached your board. TAKIX's prospectus quotes a fee retired in 2020.
+- **KREF's fee is quoted quarterly** on a different base — 0.375% as printed,
+  against peers quoting ~1.0%. It is 1.50% a year.
 - **A distribution quarter BDCs never report separately** understated GBDC's
   one-year return by 265 basis points.
-- **CCLFX charges no incentive fee at all** — established from its fee table, so
-  that cell reads "none charged" rather than sitting empty.
 
 Each is a number a careful analyst could get wrong, and none announces itself.
 
@@ -82,14 +78,35 @@ Each is a number a careful analyst could get wrong, and none announces itself.
 We asked to reconcile our output against a prior quarter's manual pack and were
 told — correctly — that live fund data cannot leave the firm without compliance
 sign-off. So this has never been checked against an external reference, and we
-would rather say so plainly than let the grades imply otherwise. There is no
-answer key; the manual process was your only source.
+would rather say so than let the grades imply otherwise.
 
-The system therefore reports **evidence**, not accuracy: how the number was
+The system therefore reports **evidence**, not accuracy: how a number was
 obtained, whether independently built versions agree, how current the filing is,
 and any problem seen while extracting. High means several independent routes
 converged; Low means one route, unchecked. That survives a board question. "The
 model said so" does not, and nothing here asks a model how confident it is.
+
+## The three additions from today's call
+
+**Custom metrics** are now definitions rather than code. Your PMs describe a
+metric — what it is called, its unit, whether higher is better, where in a filing
+it appears — and it flows through with the same provenance and confidence as the
+original nine. Portfolio turnover and non-accrual rates already work this way.
+Next quarter's metric does not require us.
+
+**Fund discovery** lets you search EDGAR and add a fund by CIK. It never picks a
+search result for you — "Golub Capital BDC" returns three entities and none is
+the right one — and it refuses any fund it cannot confidently classify, because
+the system runs different extraction against a BDC, an interval fund and a REIT.
+Guessing there produces confident wrong numbers, not blanks. Tested by adding
+Ares Capital cold: 8 of 9 metrics correct on the first run. One caution: SEC's
+ticker files omit non-traded interval funds entirely, so the type you care most
+about is invisible to a ticker lookup. Supplying the CIK always works.
+
+**Word output** is produced every run, with the table, the coverage account, the
+resolved conflicts and a provenance appendix. Blank cells carry their reasons
+there too — the document that leaves the building must not look more complete
+than the evidence behind it.
 
 ## Production rollout
 
@@ -116,17 +133,13 @@ with a reason, never a wrong number — but it needs an owner, not an install.
 ## Tradeoffs
 
 We chose depth of evidence over breadth of coverage. Filling all 36 cells with
-unverified numbers was achievable in the time. We judged it worth less than 26
-cells you can defend in a board meeting, plus an explicit account of who owns each
-of the 10 that are empty.
+unverified numbers was achievable in the time; we judged it worth less than 26
+you can defend in a board meeting plus an account of who owns each of the 10
+that are empty.
 
-We also did not build for scope we were told might come. Adding a fund of a type
-already handled is configuration; a plug-in framework for funds nobody has named
-would have cost the time that went into the confidence model.
-
-One consequence of your own rules is worth seeing before it surprises you. CCLFX's
-March fiscal year-end puts its most recent annual report 275 days behind a Q4 2025
-reporting date — past your six-month line. Three of its cells blank on your rule
-rather than on any failure of ours, and this will recur every year in the same two
-quarters. It is the live case for the labelled fund-level fallback now with your
-CIO.
+One consequence of your own rules is worth seeing before it surprises you.
+CCLFX's March fiscal year-end puts its most recent annual report 275 days behind
+a Q4 2025 reporting date — past your six-month line. Three of its cells blank on
+your rule rather than any failure of ours, and this recurs every year in the same
+two quarters. It is the live case for the labelled fund-level fallback now with
+your CIO.

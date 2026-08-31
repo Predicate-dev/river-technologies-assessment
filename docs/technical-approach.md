@@ -1,7 +1,7 @@
 # Technical approach — competitor benchmarking pipeline
 
 **Audience:** Apex Ridge technical counterpart
-**Status:** prototype against live SEC EDGAR · 89 tests · 26 of 36 competitor cells populate at the Q4 2025 anchor
+**Status:** prototype against live SEC EDGAR · 112 tests · 26 of 36 competitor cells populate at the Q4 2025 anchor
 
 ---
 
@@ -32,6 +32,7 @@ The split is forced by the filers, not chosen:
 | `nport.py` | CCLFX, TAKIX | N-PORT XML: net assets, borrowings, monthly returns |
 | `highlights.py` | CCLFX, TAKIX | N-CSR/N-CSRS financial highlights — the only class-level source |
 | `narrative.py` | all four | Fee tables, anchored prose patterns, optional LLM |
+| `discovery.py` | any filer | EDGAR search and evidence-based classification |
 
 GBDC and KREF file 10-K/10-Q with rich XBRL. The interval funds file no 10-K and
 have eleven usable `cef:` tags between them, so their fee terms exist only in
@@ -46,7 +47,7 @@ and staleness; `core/reconcile.py` is the only path that can blank a value;
 
 **Structured-first, LLM last.** The LLM tier is built but unused — the
 deterministic tiers cover every fee extracted — so the pipeline runs with no API
-key and the compliance question does not block the prototype.
+key and compliance does not block the prototype.
 
 **Every metric carries a `basis`, not just a value.** Forced by KREF, whose
 management fee is struck on stockholders' equity and whose "NAV per share" is
@@ -54,10 +55,10 @@ GAAP book value. That gap cannot be a footnote bolted on at render time. It has
 paid for itself repeatedly since: the leverage question and the unconfirmed basis
 of the Apex column are both render-time switches *because* basis is in the schema.
 
-**Multiple candidates per metric, deliberately.** Leverage is built three ways;
-the third exists purely as a consistency probe against the second. Disagreement
-between them means the filer's balance-sheet tagging is inconsistent and every
-derived value for that fund should be downgraded.
+**Multiple candidates per metric.** Leverage is built three ways; the third is a
+consistency probe against the second. Disagreement means the filer's
+balance-sheet tagging is inconsistent and every derived value should be
+downgraded.
 
 **Blanks are typed** — `NOT_APPLICABLE`, `NOT_YET_FILED`, `STALE`,
 `BASIS_DISQUALIFIED`, `SUPPRESSED`. A bare blank raises rather than renders.
@@ -91,9 +92,8 @@ trusting it. **Nothing asks a model how confident it is.**
 
 Reconciliations that run: cross-mechanism (GBDC NAV — XBRL 14.84 vs
 equity÷shares, agreeing to 0.02%); cross-document (CCLFX's fee in both the
-expense table and prose); internal consistency (liabilities÷equity vs
-(assets−equity)÷equity); and bound-checking (TAKIX's seven unlabelled class
-series bound any narrative figure — retained internally, never rendered).
+expense table and prose); internal consistency; and bound-checking against
+TAKIX's seven unlabelled class series.
 
 **Resolution is by weight of evidence, not tier.** Same-basis candidates cluster
 by agreement; the cluster with most *independent* extractions wins, then fewest
@@ -108,35 +108,59 @@ Below 0.40 the value is withheld and the blank states why.
 tagged — from a 424B2 notes prospectus, not the fund's fee table. Highest tier,
 wrong number, suppressed at 0.13. *This is why tier alone cannot be the model.*
 
-**GBDC's 10-K states old and current rates in one sentence** — "reduced from
-1.375% to 1.0%", "from 20.0% to 15.0%". Both are emitted; reconciliation resolves
-by effective date and logs the conflict. This is the exact misread that reached
-your board. Note both incentive tiers are 15.0%; 20% is the prior rate, not a
-second tier.
+**Superseded rates appear beside current ones.** GBDC's 10-K says "reduced from
+1.375% to 1.0%" and "from 20.0% to 15.0%"; TAKIX's prospectus quotes a fee
+retired in 2020 paragraphs from the current one. Both figures are emitted and
+resolved by effective date, with the conflict logged. This is the exact misread
+that reached your board. Note both GBDC incentive tiers are 15.0% — 20% is the
+prior rate, not a second tier.
 
-**TAKIX's prospectus quotes a management fee retired in 2020**, paragraphs from
-the current one. Same hazard, different grammar.
+**Adjacent figures get confused.** TAKIX's catch-up rate (1.765%) sits in the
+same sentence as its hurdle (1.500%); reading one as the other was a live failure
+until distinguished. Its incentive rate of 15% appears only inside the worked fee
+examples. KREF's fee is quoted quarterly on adjusted equity — 0.375%, which is
+1.50% a year against peers quoting ~1.0%.
 
 **A distribution quarter BDCs never tag separately** understated GBDC's 1Y return
 by 265bp until reconstructed.
 
-**KREF's management fee is quoted quarterly** on adjusted equity — 0.375%, which
-is 1.50% a year against peers quoting ~1.0%. Annualized and basis-marked.
-
-**CCLFX charges no incentive fee**, established from the absence of an incentive
-row in a complete fee table rather than from anyone's recollection. Its hurdle is
-therefore reported as inapplicable, not as a gap — a fund with no carry has no
-hurdle, and calling that an extraction failure would imply a figure exists.
-
-**TAKIX states its incentive rate only inside the worked fee examples** ("there
-is a 15% incentive fee on pre-incentive fee net investment income"), and its
-catch-up rate sits adjacent to its hurdle in the same sentence. Both are
-extracted and distinguished; reading the catch-up as the hurdle was a live
-failure until it was.
+**CCLFX charges no incentive fee**, established from the absence of that row in a
+complete fee table. Its hurdle is therefore inapplicable, not a gap.
 
 **TAKIX reports zero borrowings against $2.2bn of liabilities.** Computable,
 withheld: falling through to the total-liabilities basis would silently answer
 the regulatory-vs-economic question now with your CIO.
+
+## 4a. The scope additions
+
+**Custom metrics.** A metric is a specification — label, unit, direction,
+plausible range, and where its value can be found — declared in JSON. The
+original nine are declared the same way, so a custom metric gets identical
+provenance, reconciliation and confidence treatment rather than a weaker side
+channel. Bad definitions fail the run: an unlabelled or wrongly-scaled number in
+a board deck is the outcome this system exists to prevent. Portfolio turnover and
+GBDC's non-accrual rate now extract with no code change. Note the non-accrual
+definition captures the *fair value* figure specifically — filers state cost and
+fair value in one sentence ("were 0.6% and 0.3%, respectively") and the two are
+not interchangeable, which is the kind of thing a metric definition has to pin
+down rather than leave to whoever writes the pattern.
+
+**Fund discovery.** `--find` searches, `--add-cik` adds. It never auto-resolves a
+search: "Golub Capital BDC" returns three CIKs, none of them the right one. And
+it refuses a filer it cannot classify confidently, because every adapter keys off
+entity type and fiscal year end — misclassification produces confidently wrong
+numbers, not blanks. Fiscal year end is derived from the filer's own annual
+filings, not EDGAR's registration metadata, which records 12-31 for CCLFX whose
+N-CSR covers a year ended 31 March. Ares Capital, never configured, populates 8
+of 9 metrics on first run.
+
+Two limits: SEC's ticker files do not list non-traded interval funds at all, so
+name search is the only route to that type and that endpoint rate-limits heavily;
+and a fund of an entity type we do not handle has no adapter regardless.
+
+**Word output.** Table, coverage, conflicts, comparison, provenance appendix.
+Blank cells carry their reason there too — a Word document that looked more
+complete than the evidence would undo the point of the exercise.
 
 ## 5. Limitations
 
