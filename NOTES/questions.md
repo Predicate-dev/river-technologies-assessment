@@ -143,7 +143,22 @@ far governs the peers; the anchor of the comparison has never been defined.**
   reference point and every peer comparison inherits it. Apex CSV shows a
   single mgmt fee 1.25 / incentive 12.50 / hurdle 6.00 with no class label.
 
-- TBD: driven by actual conflicts found in the data.
+- **F. NEW (build finding). Do fee terms go stale?** The six-month rule blanks
+  GBDC's management fee, but 1.0% is the rate *in force* under the current
+  effective advisory agreement -- it is not a point-in-time measurement the way
+  a NAV or a leverage ratio is. Under a flat 183-day rule a live, correct fee
+  rate renders as a blank. Proposal: exempt the three fee-terms metrics
+  (management fee, incentive fee, hurdle) from hard staleness and let the
+  continuous freshness factor discount them instead; keep the hard rule for
+  every measured quantity. One-line answer, changes ~6 cells. Not assumed --
+  the partner set the six-month line and this is a carve-out from it.
+- **G. NEW (build finding). Superseded rates in the source.** GBDC's 10-K
+  states "the base management fee rate was reduced from 1.375% to 1.0%" and
+  "incentive fee rates were reduced from 20.0% to 15.0%" -- both the old and
+  the current figure sit in the same sentence. We resolve to the current rate
+  and flag it. Worth telling the partner explicitly: this is the exact shape of
+  the misread that caused his board incident, and it is now a named, tested
+  case rather than a matter of analyst attention.
 
 ## Window 3 (pre-delivery)
 

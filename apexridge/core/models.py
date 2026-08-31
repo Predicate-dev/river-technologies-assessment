@@ -295,6 +295,7 @@ class SuppressionReason(str, Enum):
     CLASS_ATTRIBUTION_FAILED = "class_attribution_failed"  # cannot name the class
     STALE_BEYOND_LIMIT = "stale_beyond_limit"  # older than the client's hard limit
     BELOW_CONFIDENCE_FLOOR = "below_confidence_floor"  # evidence too weak
+    BASIS_DISQUALIFIED = "basis_disqualified"  # the elected construction measures nothing
 
 
 @dataclass

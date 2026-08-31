@@ -77,6 +77,19 @@ BASIS_PREFERENCE: dict[str, list[tuple[str, str]]] = {
 }
 
 
+# Flags that do not merely weaken a value -- they mean the construction did not
+# measure the metric at all. TAKIX reports 0.00 in every N-PORT borrowing field
+# while carrying $2.2bn of total liabilities on $4.47bn of net assets, so its
+# gross-debt leverage ratio is 0.00: arithmetically correct and informationally
+# empty. A confidence penalty is the wrong instrument for this, because the
+# number is not uncertain, it is inapplicable.
+DISQUALIFYING_FLAGS = frozenset({"zero_borrowings_but_material_total_liabilities"})
+
+
+def _disqualified(cand: Candidate) -> bool:
+    return any(f in DISQUALIFYING_FLAGS for f in cand.flags)
+
+
 def _basis_rank(metric: str, cand: Candidate) -> int:
     prefs = BASIS_PREFERENCE.get(metric)
     if not prefs:
@@ -248,6 +261,53 @@ def reconcile_metric(
         key=lambda kv: (_basis_rank(metric, kv[1][0]), -max(c.tier.base_score for c in kv[1])),
     )
     primary_key, primary_group = ordered_bases[0]
+
+    # A disqualified primary basis is NOT silently replaced by the next basis
+    # down. Falling through would quietly answer the question the client has
+    # escalated -- whether leverage is measured on a regulatory (borrowings) or
+    # economic (total liabilities) basis -- by picking the economic one and not
+    # saying so. The cell blanks and names both readings instead.
+    if all(_disqualified(c) for c in primary_group):
+        alt = [
+            min(g, key=lambda c: (len(c.flags), -c.tier.base_score))
+            for _, g in ordered_bases[1:]
+        ]
+        disq = min(primary_group, key=lambda c: (len(c.flags), -c.tier.base_score))
+        alt_text = "; ".join(
+            f"{c.basis.get('leverage_basis') or c.basis_key or 'alternative basis'} "
+            f"= {c.value:.4g}"
+            for c in alt
+        )
+        return _suppress(
+            ResolvedMetric(
+                fund_ticker=fund.ticker,
+                metric=metric,
+                value=None,
+                unit=unit,
+                confidence=Confidence.SUPPRESSED,
+                score=0.0,
+                chosen=None,
+                alternatives=alt,
+            ),
+            Suppression(
+                fund_ticker=fund.ticker,
+                metric=metric,
+                reason=SuppressionReason.BASIS_DISQUALIFIED,
+                detail=(
+                    "the filer reports no borrowings while carrying material "
+                    "total liabilities, so the reported basis does not measure "
+                    "leverage; the basis to use is with the client"
+                ),
+                as_of=disq.as_of,
+                internal_note=(
+                    f"appendix only: disqualified {primary_key or 'primary basis'} "
+                    f"= {disq.value:.4g}"
+                    + (f"; {alt_text}" if alt_text else "")
+                    + "; not substituted, that choice is the open CIO question"
+                ),
+            ),
+        )
+
     chosen, same_basis_others, conflict = _resolve_within_basis(metric, primary_group)
 
     score, audit = score_candidate(chosen, same_basis_others, reference_date)
