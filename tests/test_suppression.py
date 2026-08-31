@@ -263,3 +263,68 @@ def test_window_mismatch_coverage_is_the_computable_window():
     assert s is not None and s.reason is SuppressionReason.WINDOW_MISMATCH
     assert s.coverage_start == date(2021, 9, 30)
     assert s.coverage_label.startswith("4.7y available")
+
+
+# ------------------------------------------------- disqualified basis (TAKIX)
+
+
+def _lev(value: float, basis: str, flags: list[str]) -> Candidate:
+    # Inside the staleness limit, so these exercise the basis gate rather than
+    # tripping the six-month cliff first.
+    c = candidate(value, date(2026, 6, 30), flags)
+    c.metric = "leverage_ratio_dte"
+    c.unit = "ratio"
+    c.basis = {"leverage_basis": basis}
+    return c
+
+
+LEVERAGE_FUND = Fund(
+    name="Test Interval Fund",
+    ticker="TESTX",
+    cik="1234567",
+    entity_type="interval_fund",
+    fiscal_year_end="03-31",
+    primary_forms=("NPORT-P",),
+    supported_metrics=("leverage_ratio_dte",),
+)
+
+
+def test_disqualified_primary_basis_blanks_rather_than_falling_through():
+    """TAKIX: 0.00 borrowings against material liabilities. Falling through to
+    the total-liabilities basis would silently answer the regulatory-vs-economic
+    question the client has escalated, by picking the economic reading."""
+    cands = [
+        _lev(0.0, "gross_debt_to_equity", ["zero_borrowings_but_material_total_liabilities"]),
+        _lev(0.4939, "total_liabilities_to_equity", ["includes_unsettled_trades_and_payables"]),
+    ]
+    r = reconcile_metric(LEVERAGE_FUND, "leverage_ratio_dte", cands, REF)
+    assert r.value is None
+    assert r.suppression.reason is SuppressionReason.BASIS_DISQUALIFIED
+    # The alternative is preserved for the appendix but never substituted.
+    assert "0.4939" in r.suppression.internal_note
+    assert "0.4939" not in r.suppression.cell_label
+    assert "0.49" not in r.suppression.cell_label
+
+
+def test_a_clean_primary_basis_is_unaffected():
+    """The gate must not fire on the three funds that report borrowings properly."""
+    cands = [
+        _lev(1.231, "gross_debt_to_equity", []),
+        _lev(1.9, "total_liabilities_to_equity", ["includes_unsettled_trades_and_payables"]),
+    ]
+    r = reconcile_metric(LEVERAGE_FUND, "leverage_ratio_dte", cands, REF)
+    assert r.value == 1.231
+    assert r.suppression is None
+
+
+def test_disqualifying_flag_on_only_one_of_two_same_basis_candidates_does_not_blank():
+    """The gate requires the whole basis to be disqualified. One bad extraction
+    alongside a clean one on the same basis is an ordinary conflict, not an
+    inapplicable construction."""
+    cands = [
+        _lev(0.0, "gross_debt_to_equity", ["zero_borrowings_but_material_total_liabilities"]),
+        _lev(1.231, "gross_debt_to_equity", []),
+    ]
+    r = reconcile_metric(LEVERAGE_FUND, "leverage_ratio_dte", cands, REF)
+    assert r.value == 1.231  # fewest-flags ordering picks the clean one
+    assert r.suppression is None

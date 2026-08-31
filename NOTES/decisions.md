@@ -298,3 +298,63 @@
 - **"stated_as: quarterly" moved out of `basis` into `transforms`.** As a basis
   key it split conflicting hurdle values into separate groups so they never got
   reconciled against each other -- a silent way to ship a wrong number.
+
+## Basis disqualification (TAKIX leverage)
+
+- **A flag that means "this construction measured nothing" is not a confidence
+  penalty.** TAKIX's gross-debt leverage is 0.00 — arithmetically correct,
+  informationally empty, since the fund reports zero borrowings while carrying
+  $2.2bn of total liabilities on $4.47bn net assets. Discounting it to 0.46
+  left it above the 0.40 floor and it rendered as `0.00x, Low`. That is the
+  "confident wrong number" on the exact metric behind the client's board
+  incident. `DISQUALIFYING_FLAGS` in reconcile.py now blanks it outright.
+  Rejected lowering the global floor (would blank unrelated good cells).
+- **A disqualified primary basis is never replaced by the next basis down.**
+  Falling through to total_liabilities_to_equity (0.4939) would have silently
+  answered the regulatory-vs-economic question the partner escalated to the
+  CIO, by choosing the economic reading and not saying so. The cell blanks and
+  names both readings; the alternative is preserved in `internal_note` for the
+  appendix. This is the one place the pipeline holds a computable number back
+  purely because the *question* is open rather than the data.
+- **Renders as its own reason code, not as "basis unconfirmed".** Settled with
+  the render session: "we know the basis exactly and it fails to measure the
+  thing" (TAKIX leverage) and "we do not know what basis this number is on"
+  (the Apex column, where the client could not state share class or fee
+  treatment) are opposite states. Collapsing them would understate the only
+  case where the pipeline withholds a computable number.
+- **Gate requires the whole basis to be disqualified.** One bad extraction
+  alongside a clean one on the same basis is an ordinary conflict and resolves
+  normally. Tested.
+- Unaffected: CCLFX 0.29x, GBDC 1.23x, KREF 3.25x.
+
+## Working split with the parallel session
+
+- **Pipeline / render split.** This session owns reconcile, confidence, the
+  Suppression block in models, and the XBRL/N-PORT extractors. The parallel
+  session owns render (Cell/ReasonCode/ShareClass), temporal (anchor,
+  eligibility), and narrative extraction. Agreed explicitly after both sessions
+  independently started pipeline orchestration.
+- **Two blank-cell enums kept deliberately, not collapsed.** `SuppressionReason`
+  (8 values) is the pipeline diagnosis and carries the coverage arithmetic;
+  `ReasonCode` (5 values) is the client-facing render vocabulary in the
+  partner's own wording. An explicit documented map between them, failing loudly
+  on an unmapped reason. Rejected merging: loses either the granularity or the
+  wording.
+- **Open correctness bug, owned by the other session: `temporal.is_eligible` is
+  not wired.** Nothing filters candidates whose period_end is after the deck's
+  anchor (2025-12-31), so the deck currently shows peers at mid-2026 against
+  Apex's Q4 2025 column — peers look fresher than the client. Flagged; the
+  reconciler will take the anchor as its `reference_date` once the filter lands.
+
+- **Known debt, recorded rather than argued away: the two blank-cell enums are
+  near 1:1** (8 `SuppressionReason` vs 9 `ReasonCode`). The split's remaining
+  value is client-facing wording plus two render-only states that no suppression
+  produces. One enum with a label table would be simpler and would remove a
+  class of mapping bug; we kept the split because collapsing it mid-engagement
+  churns the test suite, not because it is load-bearing. Cheap to collapse later.
+- **Filing-lag projections must not be computed from XBRL companyfacts.** A
+  period's earliest appearance there is often a *comparative* restatement in a
+  later filing: GBDC's 2020-09-30 and 2021-09-30 periods both first appear in
+  the FY2022 10-K, implying 782d and 417d lags against a true cadence of ~50d
+  (52/51/50/49d for FY2022-FY2025). Projected "expected filing" windows must
+  come from the submissions index, which has one row per actual filing.
