@@ -657,3 +657,26 @@ reached this session relayed by the parallel session, not heard directly.
 - **Share-class labels are normalized before comparison.** One CCLFX filing
   labels its class "Class\n        I"; raw string comparison dropped that table
   and the fund silently lost a year of NAV history from its trend.
+
+## Peer comparison
+
+- **Side-by-side columns are adjacency, not comparison.** The brief asks the
+  system to compare against Apex's own data; until now it only placed the
+  columns next to each other. `render/comparison.py` produces peer median,
+  range, ordering, and Apex's delta and rank.
+- **Comparability is decided on what a figure measures, not how it was derived.**
+  A first cut compared whole basis strings and excluded TAKIX's returns for being
+  chain-linked annual rather than NAV total return — both are net returns on NAV.
+  That left most rows with a single "peer" and quietly defeated the very
+  normalization the system exists to do. Now a narrow per-metric key: fee base,
+  NAV measure, yield denominator, leverage basis. Exclusions are down to the two
+  genuinely incomparable cases, both KREF.
+- **Rankings only where direction is defined.** Returns, yields and fee terms
+  have a better and a worse. NAV per share is a share price and leverage is a
+  risk posture; both are ordered without a ranking claim.
+- **The Apex gate is a real switch, and now provably so.** Peer-to-peer
+  statistics do not depend on Apex's basis and render today; Apex-versus-peer
+  deltas are computed and withheld behind `APEX_BASIS_CONFIRMED`. A test flips
+  the flag and asserts the output changes -- the technical doc tells the client
+  this is one flag rather than a rebuild, so that claim is now tested rather
+  than asserted.

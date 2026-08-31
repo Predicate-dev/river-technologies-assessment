@@ -105,7 +105,8 @@ def main(argv: list[str] | None = None) -> int:
     print(
         f"Board table: {paths['board']}\n"
         f"Audit trail: {paths['audit']}\n"
-        f"Coverage:    {paths['coverage']}"
+        f"Coverage:    {paths['coverage']}\n"
+        f"Apex vs peers: {paths['comparison']}"
         + (f"\nNAV trend:   {paths['trend']}" if "trend" in paths else ""),
         file=sys.stderr,
     )

@@ -362,7 +362,17 @@ def write_outputs(run: BenchmarkRun, outdir, client=None) -> dict[str, str]:
     coverage.write_text(coverage_markdown(run))
     coverage_frame(run).to_csv(out / "coverage_breakdown.csv", index=False)
 
-    paths = {"board": str(board), "audit": str(audit), "coverage": str(coverage)}
+    from .comparison import comparison_markdown
+
+    versus = out / "apex_vs_peers.md"
+    versus.write_text(comparison_markdown(run))
+
+    paths = {
+        "board": str(board),
+        "audit": str(audit),
+        "coverage": str(coverage),
+        "comparison": str(versus),
+    }
     if client is not None:
         from .trend import build_trend, trend_frame, trend_markdown
 

@@ -96,6 +96,13 @@ AMENDABLE_FORMS = {
     "interval_fund": ("486BPOS", "497", "424B3", "N-CSR", "N-CSRS"),
 }
 
+# Apex Ridge could not confirm the share class its own reported figures
+# represent, or whether the net return is net of both fees or management only.
+# Until it does, peer-minus-Apex deltas and rankings are computed but withheld:
+# a delta between two numbers of unknown basis is the confidently-wrong figure
+# this system exists to prevent. Flip to True when the client confirms.
+APEX_BASIS_CONFIRMED = False
+
 METRIC_LABELS = {
     M_RETURN_1Y: "Net return, trailing 1Y (ann.)",
     M_RETURN_3Y: "Net return, trailing 3Y (ann.)",
