@@ -1,7 +1,7 @@
 # Technical approach — competitor benchmarking pipeline
 
 **Audience:** Apex Ridge technical counterpart
-**Status:** prototype against live SEC EDGAR · 124 tests · 26 of 36 competitor cells populate at the Q4 2025 anchor
+**Status:** prototype against live SEC EDGAR · 140 tests · 28 of 40 competitor cells populate at the Q4 2025 anchor
 
 ---
 
@@ -104,65 +104,60 @@ Below 0.40 the value is withheld and the blank states why.
 
 ## 4. Where sources disagreed
 
-**GBDC's XBRL reports its management fee as 0.021%.** Valid XBRL, correctly
-tagged — from a 424B2 notes prospectus, not the fund's fee table. Highest tier,
-wrong number, suppressed at 0.13. *This is why tier alone cannot be the model.*
+**A correctly-tagged number can still be the wrong one.** GBDC's XBRL reports
+its management fee as 0.021% — valid, from a 424B2 notes prospectus rather than
+the fund's fee table. Highest tier, wrong number, suppressed at 0.13. This is
+why source tier alone cannot be the confidence model.
 
-**Superseded rates appear beside current ones.** GBDC's 10-K says "reduced from
-1.375% to 1.0%" and "from 20.0% to 15.0%"; TAKIX's prospectus quotes a fee
-retired in 2020 paragraphs from the current one. Both figures are emitted and
-resolved by effective date, with the conflict logged. This is the exact misread
-that reached your board. Note both GBDC incentive tiers are 15.0% — 20% is the
-prior rate, not a second tier.
+**Superseded rates sit beside current ones.** GBDC's 10-K says "reduced from
+1.375% to 1.0%"; TAKIX's prospectus quotes a fee retired in 2020. Both figures
+are emitted and resolved by effective date, and a superseded rate never renders
+bare — your own instruction, and correct, since GBDC's superseded 20% and KREF's
+live 20% are the same number meaning opposite things.
 
 **Adjacent figures get confused.** TAKIX's catch-up rate (1.765%) sits in the
-same sentence as its hurdle (1.500%); reading one as the other was a live failure
-until distinguished. Its incentive rate of 15% appears only inside the worked fee
-examples. KREF's fee is quoted quarterly on adjusted equity — 0.375%, which is
-1.50% a year against peers quoting ~1.0%.
+same sentence as its hurdle (1.500%). KREF's fee is quoted quarterly on adjusted
+equity — 0.375%, which is 1.50% a year against peers quoting ~1.0%.
 
-**A distribution quarter BDCs never tag separately** understated GBDC's 1Y return
-by 265bp until reconstructed.
+**A quarter BDCs never tag separately** understated GBDC's 1Y return by 265bp
+until reconstructed. **CCLFX charges no incentive fee**, established from the
+absence of that row in a complete fee table, so its hurdle is inapplicable
+rather than missing.
 
-**CCLFX charges no incentive fee**, established from the absence of that row in a
-complete fee table. Its hurdle is therefore inapplicable, not a gap.
+**TAKIX reports zero borrowings against $2.2bn of liabilities.** Its regulatory
+cell blanks — zero borrowings against material liabilities measures nothing.
+Per your CIO's ruling leverage now reports as two rows, so TAKIX reads blank on
+regulatory and 0.45x on economic, with neither standing in for the other.
 
-**TAKIX reports zero borrowings against $2.2bn of liabilities.** Computable,
-withheld: falling through to the total-liabilities basis would silently answer
-the regulatory-vs-economic question now with your CIO.
+**Your own leverage basis is the one question that survived Window 3.** Your
+confirmation covered share class and fee treatment, which unblocked returns,
+fees and yield. It did not say which basis your single `leverage_ratio_dte`
+column uses, and the peers now report two differing by more than a factor of two
+— CCLFX reads 0.32x regulatory against 0.79x economic. Your leverage figure
+renders; its delta is withheld. One flag reverses that.
 
 ## 4a. The scope additions
 
-**Custom metrics.** A metric is a specification — label, unit, direction,
-plausible range, and where its value can be found — declared in JSON. The
-original nine are declared the same way, so a custom metric gets identical
-provenance, reconciliation and confidence treatment rather than a weaker side
-channel. Bad definitions fail the run: an unlabelled or wrongly-scaled number in
-a board deck is the outcome this system exists to prevent. Portfolio turnover and
-GBDC's non-accrual rate now extract with no code change. Note the non-accrual
-definition captures the *fair value* figure specifically — filers state cost and
-fair value in one sentence ("were 0.6% and 0.3%, respectively") and the two are
-not interchangeable, which is the kind of thing a metric definition has to pin
-down rather than leave to whoever writes the pattern.
+**Custom metrics** are declarations, not code: label, unit, direction, plausible
+range, and where the value is found. The original nine are declared the same
+way, so a custom metric gets identical provenance and confidence rather than a
+weaker side channel. Bad definitions fail the run. Simple ones need no regex —
+name the phrase, say what to take, bound the distance. One trap worth knowing:
+GBDC states non-accruals as "0.6% and 0.3%, respectively" (cost, then fair
+value), so the definition must pin the basis. We ship both as separate metrics.
 
-**Fund discovery.** `--find` searches on EDGAR full-text search — the only SEC
-index that sees non-traded interval funds, which the ticker files omit entirely —
-and `--add-cik` adds. Peer sets persist as readable JSON. It never auto-resolves a
-search: "Golub Capital BDC" returns three CIKs, none of them the right one. And
-it refuses a filer it cannot classify confidently, because every adapter keys off
-entity type and fiscal year end — misclassification produces confidently wrong
-numbers, not blanks. Fiscal year end is derived from the filer's own annual
-filings, not EDGAR's registration metadata, which records 12-31 for CCLFX whose
-N-CSR covers a year ended 31 March. Ares Capital, never configured, populates 8
-of 9 metrics on first run.
+**Fund discovery** searches EDGAR full-text — the only SEC index that sees
+non-traded interval funds; the ticker files omit them entirely — and adds by
+CIK. It never auto-resolves a search ("Golub Capital BDC" returns three CIKs,
+none of them right) and refuses any filer it cannot classify confidently, since
+misclassification runs the wrong extractors and yields wrong numbers rather than
+blanks. Fiscal year end comes from the filer's own annual filings, not EDGAR's
+registration metadata, which records 12-31 for CCLFX against an N-CSR covering a
+year ended 31 March. Peer sets persist as readable JSON.
 
-Two limits: SEC's ticker files do not list non-traded interval funds at all, so
-name search is the only route to that type and that endpoint rate-limits heavily;
-and a fund of an entity type we do not handle has no adapter regardless.
-
-**Word output.** Table, coverage, conflicts, comparison, provenance appendix.
-Blank cells carry their reason there too — a Word document that looked more
-complete than the evidence would undo the point of the exercise.
+**Word output** carries the table, coverage, conflicts, comparison and a
+provenance appendix. Blank cells carry their reasons there too — the document
+that leaves the building must not look more complete than the evidence.
 
 ## 5. Limitations
 
@@ -210,5 +205,8 @@ semi-annual NAV footing; KREF retained on a row-level mapping. Consultant
 defaults, unratified: confidence weightings, the 0.40 floor, gross-debt leverage
 as primary, run-rate as the primary yield basis, the N-PORT depth cap. Open with
 your CIO: the leverage definition, peer-list criteria, the CCLFX fallback, LLM
-compliance. **Unconfirmed and blocking:** the basis of Apex Ridge's own column —
-share class and fee treatment — so its deltas are suppressed.
+compliance. **Confirmed in Window 3:** the CIO's leverage ruling (both bases; KREF
+non-recourse securitisation out, repo in; two display rows), your column's share
+class and fee treatment, the fee-clock label, and custom-metric authorship.
+**Still open:** which leverage basis your own ratio uses — the only remaining
+suppression, and one nobody could have asked before leverage split in two.

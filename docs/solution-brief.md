@@ -34,7 +34,7 @@ The three additions from today's call are covered below.
 ## The judgment calls, in business terms
 
 **We made the system prefer a gap to a guess** — your rule, applied literally. Of
-36 competitor cells, 26 populate and 10 are blank, and none of the blanks is now
+40 competitor cells, 28 populate and 12 are blank, and none of the blanks is now
 ours to close: four are figures that exist but fall outside your six-month
 staleness line, one is withheld pending your leverage definition, and five are
 figures the competitor does not publish at all.
@@ -52,9 +52,17 @@ are blank and labelled instead — a complete-looking table comparing two differ
 things is the failure this system exists to prevent.
 
 **We separated "sources disagree" from "the definition is open."** TAKIX reports
-zero borrowings while carrying $2.2bn of liabilities. A figure is computable, but
-which is right depends on a definition now with your CIO, and the system will not
-answer that by quietly picking one.
+zero borrowings while carrying $2.2bn of liabilities. A figure was computable,
+but which one was right depended on a definition — so the system held it rather
+than picking. Your CIO has since ruled, leverage now reports as two rows, and
+TAKIX reads blank on regulatory and 0.45x on economic. The discipline is the
+point: the number waited for the definition rather than the other way round.
+
+That same discipline now applies to one figure of your own. Your confirmation
+covered share class and fee treatment, which released every other comparison.
+It did not establish which leverage basis your own ratio is on, and the peer
+bases differ by more than a factor of two — so your leverage figure appears and
+its comparison is withheld until you tell us. It is a single setting to reverse.
 
 ## What it caught
 
@@ -86,22 +94,18 @@ and any problem seen while extracting. High means several independent routes
 converged; Low means one route, unchecked. That survives a board question. "The
 model said so" does not, and nothing here asks a model how confident it is.
 
-## The three additions from today's call
+## The three scope additions
 
-**Custom metrics** are now definitions rather than code. Your PMs describe a
-metric — what it is called, its unit, whether higher is better, where in a filing
-it appears — and it flows through with the same provenance and confidence as the
-original nine. Portfolio turnover and non-accrual rates already work this way.
-Next quarter's metric does not require us.
+**Custom metrics** are now definitions rather than code — describe a metric and
+it flows through with the same provenance and confidence as the original nine.
+Portfolio turnover, non-accrual rates and total annual expenses already work
+this way. Next quarter's metric does not require us to write software.
 
-**Fund discovery** lets you search EDGAR and add a fund by CIK. It never picks a
-search result for you — "Golub Capital BDC" returns three entities and none is
-the right one — and it refuses any fund it cannot confidently classify, because
-the system runs different extraction against a BDC, an interval fund and a REIT.
-Guessing there produces confident wrong numbers, not blanks. Tested by adding
-Ares Capital cold: 8 of 9 metrics correct on the first run. One caution: SEC's
-ticker files omit non-traded interval funds entirely, so the type you care most
-about is invisible to a ticker lookup. Supplying the CIK always works.
+**Fund discovery** searches EDGAR and adds a fund by CIK. It never picks a
+search result for you, and refuses any fund it cannot confidently classify —
+the system runs different extraction against a BDC, an interval fund and a
+REIT, and guessing there produces confident wrong numbers rather than blanks.
+Tested by adding Ares Capital cold: 8 of 9 metrics correct on the first run.
 
 **Word output** is produced every run, with the table, the coverage account, the
 resolved conflicts and a provenance appendix. Blank cells carry their reasons
