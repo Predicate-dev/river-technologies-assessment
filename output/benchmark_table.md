@@ -1,0 +1,37 @@
+# Peer benchmarking — private credit comparables
+
+**Reporting quarter:** 2025-12-31 (Q4 2025). Every figure is as reported by the filer for a period ending on or before that date.
+
+Confidence: High / Med / Low. A blank cell states why it is blank; it is never an extraction that quietly failed.
+
+| Metric | Apex Ridge | CCLFX | TAKIX | GBDC | KREF |
+| --- | --- | --- | --- | --- | --- |
+| Net return, trailing 1Y (ann.) | **10.31%** (client data) as of 2025-12-31 [basis unconfirmed] | **8.91%** (Low) as of 2025-12-31 [net of fees: True; nport monthly chain linked; share class: fund level] | _blank: share class not identifiable in filing -- 7 share-class return series are reported without class identifiers; could not attribute a figure to the institutional class_ | **8.72%** (Low) as of 2025-12-31 | _blank: not reported at this basis -- not reported by a mortgage reit; left blank rather than substituted with a near-metric on an incomparable basis_ |
+| Net return, trailing 3Y (ann.) | **9.92%** (client data) as of 2025-12-31 [basis unconfirmed] | _blank: insufficient history to compute -- 24 of the 36 contiguous monthly returns needed for this window are available from N-PORT; 1.9y available (2024-01-31 to 2025-12-31)_ | _blank: share class not identifiable in filing -- 7 share-class return series are reported without class identifiers; could not attribute a figure to the institutional class_ | **11.88%** (Low) as of 2025-12-31 | _blank: not reported at this basis -- not reported by a mortgage reit; left blank rather than substituted with a near-metric on an incomparable basis_ |
+| Net return, trailing 5Y (ann.) | **9.39%** (client data) as of 2025-12-31 [basis unconfirmed] | _blank: insufficient history to compute -- 24 of the 60 contiguous monthly returns needed for this window are available from N-PORT; 1.9y available (2024-01-31 to 2025-12-31)_ | _blank: share class not identifiable in filing -- 7 share-class return series are reported without class identifiers; could not attribute a figure to the institutional class_ | _blank: insufficient history to compute -- NAV history does not span a full 5Y window (nearest anchor 2020-09-30 is 92d from the 2020-12-31 start date, tolerance 60d); 4.3y available (2021-09-30 to 2025-12-31)_ | _blank: not reported at this basis -- not reported by a mortgage reit; left blank rather than substituted with a near-metric on an incomparable basis_ |
+| Management fee | **1.25%** (client data) as of 2025-12-31 [basis unconfirmed] | **1.00%** (Med) as of 2025-08-12 | _blank: no figure within staleness window -- most recent reported figure is 365d old, beyond the 183d limit_ | **1.00%** (Med) as of 2025-09-30 | _blank: no figure located in filings -- no candidate value found in any source_ |
+| Incentive fee | **12.50%** (client data) as of 2025-12-31 [basis unconfirmed] | _blank: no figure located in filings -- no candidate value found in any source_ | _blank: no figure located in filings -- no candidate value found in any source_ | **15.00%** (Med) as of 2025-09-30 | _blank: no figure within staleness window -- most recent reported figure is 365d old, beyond the 183d limit_ |
+| Incentive hurdle | **6.00%** (client data) as of 2025-12-31 [basis unconfirmed] | _blank: no figure located in filings -- no candidate value found in any source_ | _blank: no figure within staleness window -- most recent reported figure is 247d old, beyond the 183d limit_ | **8.00%** (Low) as of 2025-09-30 | _blank: no figure within staleness window -- most recent reported figure is 365d old, beyond the 183d limit_ |
+| NAV per share | **$26.12** (client data) as of 2025-12-31 [basis unconfirmed] | _blank: no figure located in filings -- no candidate value found in any source_ | _blank: no figure located in filings -- no candidate value found in any source_ | **$14.84** (High) as of 2025-12-31 | **$18.22** (Low) as of 2025-12-31 [class: common; measure: book value per share] |
+| Leverage (D/E) | **0.96x** (client data) as of 2025-12-31 [as supplied by Apex Ridge] [basis unconfirmed] | **0.32x** (Med) as of 2025-12-31 [gross debt to equity] | _blank: reported basis does not measure this metric -- the filer reports no borrowings while carrying material total liabilities, so the reported basis does not measure leverage; the basis to use is with the client_ | **1.25x** (Med) as of 2025-12-31 [gross debt to equity] | **2.45x** (Med) as of 2025-12-31 [gross debt to equity] |
+| Distribution yield (ann.) | **9.22%** (client data) as of 2025-12-31 [basis unconfirmed] | _blank: no figure located in filings -- no candidate value found in any source_ | _blank: no figure located in filings -- no candidate value found in any source_ | **10.43%** (Med) as of 2025-12-31 | **5.45%** (Med) as of 2025-12-31 |
+
+## Source conflicts resolved in this run
+
+- **TAKIX — Management fee**: candidates 1, 1.5 (spread 33%). Resolved to **1 (text_pattern)**. kept 1: agreed on by 1 independent extraction(s) vs 1.5 (1); chosen source text_pattern, no flags
+- **TAKIX — Incentive hurdle**: candidates 6, 1.765 (spread 71%). Resolved to **6 (text_pattern)**. kept 6: agreed on by 2 independent extraction(s) vs 1.765 (1); chosen source text_pattern, no flags
+- **GBDC — Management fee**: candidates 1, 1.375 (spread 27%). Resolved to **1 (text_pattern)**. kept 1: agreed on by 3 independent extraction(s) vs 1.375 (1); chosen source text_pattern, no flags
+- **GBDC — Incentive fee**: candidates 15, 20 (spread 25%). Resolved to **15 (text_pattern)**. kept 15: agreed on by 2 independent extraction(s) vs 20 (1); chosen source text_pattern, no flags
+
+## Blank cells
+
+- **CCLFX — Net return, trailing 3Y (ann.)** [insufficient_history]: 24 of the 36 contiguous monthly returns needed for this window are available from N-PORT; 1.9y available (2024-01-31 to 2025-12-31).
+- **CCLFX — Net return, trailing 5Y (ann.)** [insufficient_history]: 24 of the 60 contiguous monthly returns needed for this window are available from N-PORT; 1.9y available (2024-01-31 to 2025-12-31).
+- **GBDC — Net return, trailing 5Y (ann.)** [window_mismatch]: NAV history does not span a full 5Y window (nearest anchor 2020-09-30 is 92d from the 2020-12-31 start date, tolerance 60d); 4.3y available (2021-09-30 to 2025-12-31).
+- **TAKIX — Net return, trailing 1Y (ann.)** [class_attribution_failed]: 7 share-class return series are reported without class identifiers; could not attribute a figure to the institutional class; last available 2025-12-31.
+- **TAKIX — Net return, trailing 3Y (ann.)** [class_attribution_failed]: 7 share-class return series are reported without class identifiers; could not attribute a figure to the institutional class; last available 2025-12-31.
+- **TAKIX — Net return, trailing 5Y (ann.)** [class_attribution_failed]: 7 share-class return series are reported without class identifiers; could not attribute a figure to the institutional class; last available 2025-12-31.
+
+---
+
+Apex Ridge's own column renders with an unconfirmed basis: the share class and fee treatment behind the supplied figures are not yet established, so peer-minus-Apex deltas are withheld. A delta between two numbers of unknown basis is precisely the confidently-wrong figure this system exists to prevent.

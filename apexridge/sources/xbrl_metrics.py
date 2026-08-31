@@ -341,7 +341,12 @@ def nav_total_returns(
     navs = _nav_series(facts, anchor)
     if len(navs) < 3:
         if notices is not None:
+            # Only for metrics this filer is expected to report. A mortgage REIT
+            # has no NAV series by construction, and "0 NAV observations" would
+            # contradict the not-applicable reason the table shows.
             for metric in (M_RETURN_1Y, M_RETURN_3Y, M_RETURN_5Y):
+                if metric not in fund.supported_metrics:
+                    continue
                 notices.add(
                     Suppression(
                         fund_ticker=fund.ticker,

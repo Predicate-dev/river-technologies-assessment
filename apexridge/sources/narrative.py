@@ -368,6 +368,36 @@ def _hurdle_basis(
 # Scanning too few anchors silently loses the metric.
 PROSE_ANCHOR_LIMIT = 40
 
+# Filings restate their own history in the present document. TAKIX's prospectus
+# says "Prior to April 1, 2020, the Management Fee was ... at the annual rate of
+# 1.50%" a few paragraphs from the current 1.00%; GBDC's 10-K uses the "reduced
+# from X to Y" form handled separately. Both are correct statements of a rate
+# that is no longer in force, and both are exactly the misread that reached the
+# client's board. A match carrying one of these markers is flagged as a
+# superseded rate, which makes it a non-measurement in the confidence model: it
+# is kept as evidence and shown in the conflict log, but it can neither
+# corroborate nor outvote the rate actually in force.
+_HISTORICAL_MARKER = re.compile(
+    r"\b(prior to|previously|formerly|until\s+\w+\s+\d{1,2},\s*\d{4}|"
+    r"through\s+\w+\s+\d{1,2},\s*\d{4}|"
+    r"(?:fee|rate)\s+was\s+(?:calculated|payable|equal))\b",
+    re.I,
+)
+
+
+def _is_historical(window: str, match_start: int) -> str | None:
+    """The historical marker governing a match, if the clause carries one.
+
+    Scoped to the text between the previous sentence boundary and the match, so
+    a marker in an unrelated neighbouring sentence does not condemn a current
+    rate standing beside it.
+    """
+    head = window[max(0, match_start - 320) : match_start]
+    boundary = max(head.rfind(". "), head.rfind("; "))
+    clause = head[boundary + 1 :] if boundary != -1 else head
+    m = _HISTORICAL_MARKER.search(clause)
+    return m.group(1) if m else None
+
 
 def prose_patterns(doc: Doc) -> list[Candidate]:
     """Deterministic regex extraction over bounded windows around anchors."""
@@ -395,6 +425,9 @@ def prose_patterns(doc: Doc) -> list[Candidate]:
                         text, m.start(1), m.end(1)
                     )
                     value *= mult
+                historical = _is_historical(text, m.start())
+                if historical:
+                    flags.append("superseded_rate")
                 if metric == M_INCENTIVE_FEE and not 5.0 <= value <= 25.0:
                     # Outside the range every externally-managed credit fund
                     # actually charges. Almost always a pattern that latched
@@ -411,7 +444,8 @@ def prose_patterns(doc: Doc) -> list[Candidate]:
                         unit="pct",
                         tier=SourceTier.TEXT_PATTERN,
                         locator=f"prose pattern @ char {pos}"
-                        + (f" [{note}]" if note else ""),
+                        + (f" [{note}]" if note else "")
+                        + (f" [superseded: '{historical}']" if historical else ""),
                         excerpt=text[start : m.end() + 90],
                         basis=use_basis,
                         transforms=transforms,
