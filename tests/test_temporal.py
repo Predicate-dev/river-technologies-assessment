@@ -8,7 +8,7 @@ as like-for-like and is not, which is the failure mode with no visible symptom.
 
 from datetime import date
 
-from apexridge.config import M_LEVERAGE, M_NAV_PS
+from apexridge.config import M_LEVERAGE_REG, M_NAV_PS
 from apexridge.core.models import (
     Candidate,
     Provenance,
@@ -56,13 +56,13 @@ def test_late_filed_but_in_period_figure_is_eligible():
     Eligibility is about the period covered, not the filing date: that figure
     is the correct one for a Q4 2025 deck even though it arrived in 2026.
     """
-    late = candidate(M_LEVERAGE, 0.49, date(2025, 12, 31), filed=date(2026, 2, 27))
+    late = candidate(M_LEVERAGE_REG, 0.49, date(2025, 12, 31), filed=date(2026, 2, 27))
     assert filter_eligible([late], ANCHOR) == [late]
 
 
 def test_post_anchor_candidates_are_dropped():
-    keep = candidate(M_LEVERAGE, 0.68, date(2025, 12, 31))
-    drop = candidate(M_LEVERAGE, 0.29, date(2026, 6, 30))
+    keep = candidate(M_LEVERAGE_REG, 0.68, date(2025, 12, 31))
+    drop = candidate(M_LEVERAGE_REG, 0.29, date(2026, 6, 30))
     assert filter_eligible([keep, drop], ANCHOR) == [keep]
 
 
@@ -83,14 +83,14 @@ def test_notice_distinguishes_alignment_exclusion_from_a_source_gap():
 def test_no_notice_when_an_eligible_figure_survives():
     """Dropping a newer figure is not worth explaining if a valid one remains."""
     notices = SuppressionLog()
-    keep = candidate(M_LEVERAGE, 0.68, date(2025, 12, 31))
-    drop = candidate(M_LEVERAGE, 0.29, date(2026, 6, 30))
+    keep = candidate(M_LEVERAGE_REG, 0.68, date(2025, 12, 31))
+    drop = candidate(M_LEVERAGE_REG, 0.29, date(2026, 6, 30))
     filter_eligible([keep, drop], ANCHOR, notices)
-    assert notices.get("TESTX", M_LEVERAGE) is None
+    assert notices.get("TESTX", M_LEVERAGE_REG) is None
 
 
 def test_candidate_without_a_period_is_not_silently_admitted():
-    orphan = candidate(M_LEVERAGE, 1.0, date(2025, 6, 30))
+    orphan = candidate(M_LEVERAGE_REG, 1.0, date(2025, 6, 30))
     object.__setattr__(orphan.provenance, "period_end", None)
     orphan.as_of = None
     assert filter_eligible([orphan], ANCHOR) == []

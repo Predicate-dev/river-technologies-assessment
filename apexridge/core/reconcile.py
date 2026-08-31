@@ -28,7 +28,6 @@ from ..config import (
     METRIC_SANE_RANGE,
     METRIC_UNITS,
     M_DIST_YIELD,
-    M_LEVERAGE,
     M_NAV_PS,
     Fund,
 )
@@ -57,13 +56,10 @@ log = logging.getLogger(__name__)
 # disagree with them in one place rather than reverse-engineering them from
 # output. Each is logged in NOTES/decisions.md with its reasoning.
 BASIS_PREFERENCE: dict[str, list[tuple[str, str]]] = {
-    # Apex Ridge reports its own leverage as a debt-to-equity ratio around
-    # 1.0x, which is a borrowings-based measure. Matching that basis is what
-    # makes the comparison meaningful; total liabilities would flatter Apex.
-    M_LEVERAGE: [
-        ("leverage_basis", "gross_debt_to_equity"),
-        ("leverage_basis", "total_liabilities_to_equity"),
-    ],
+    # Leverage USED to sit here, choosing gross-debt over total-liabilities as
+    # the preferred basis. The CIO's ruling made both bases first-class rows, so
+    # there is no longer a preference to express -- and that is the better shape:
+    # a preference silently answers a question, a second row asks it out loud.
     # "Annualized distribution rate" in the brief. Run-rate is the standard
     # reading and reflects a distribution change immediately; the trailing
     # figure is carried as the alternative because it is what LP reporting
@@ -412,15 +408,18 @@ def reconcile_metric(
                 reason=SuppressionReason.BASIS_DISQUALIFIED,
                 detail=(
                     "the filer reports no borrowings while carrying material "
-                    "total liabilities, so the reported basis does not measure "
-                    "leverage; the basis to use is with the client"
+                    "total liabilities, so its regulatory basis measures "
+                    "nothing; the economic row carries this filer's leverage"
                 ),
                 as_of=disq.as_of,
                 internal_note=(
                     f"appendix only: disqualified {primary_key or 'primary basis'} "
                     f"= {disq.value:.4g}"
                     + (f"; {alt_text}" if alt_text else "")
-                    + "; not substituted, that choice is the open CIO question"
+                    + "; not substituted into this row -- the CIO ruled both "
+                    "bases are reported separately, so a disqualified "
+                    "regulatory figure blanks here rather than borrowing the "
+                    "economic one"
                 ),
             ),
         )

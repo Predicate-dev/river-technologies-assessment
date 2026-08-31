@@ -22,7 +22,14 @@ from datetime import date
 
 import pandas as pd
 
-from ..config import ALL_METRICS, METRIC_LABELS, Fund
+from ..config import (
+    ALL_METRICS,
+    APEX_BASIS_CONFIRMED,
+    APEX_LEVERAGE_BASIS_CONFIRMED,
+    LEVERAGE_METRICS,
+    METRIC_LABELS,
+    Fund,
+)
 from ..core.models import Cell, Confidence, ReasonCode, ShareClass
 from ..pipeline import BenchmarkRun
 from .cells import build_cell, format_basis
@@ -38,7 +45,13 @@ APEX_CSV_COLUMNS = {
     "incentive_fee_pct": "incentive_fee_pct",
     "incentive_hurdle_pct": "incentive_hurdle_pct",
     "nav_per_share_usd": "nav_per_share_usd",
-    "leverage_ratio_dte": "leverage_ratio_dte",
+    # Apex's supplied ratio (~1.0x) is a borrowings-over-equity measure, so it
+    # maps to the regulatory row only. There is deliberately no economic entry:
+    # Apex does not report a total-liabilities ratio, and reusing the borrowings
+    # figure on the economic row would put a number understated by construction
+    # next to peers computed the other way -- the flattering-the-house error.
+    # The economic row's Apex cell blanks with that reason instead.
+    "leverage_regulatory_dte": "leverage_ratio_dte",
     "distribution_yield_pct": "distribution_yield_pct",
 }
 
@@ -88,21 +101,36 @@ def _cell_text(cell: Cell) -> str:
     # and unconditionally for leverage -- the metric behind the board incident --
     # and for the incentive fee, where a BDC's rate applies to an income tier
     # and a capital-gain tier and a bare "15%" invites the question which.
-    if cell.divergent or cell.metric in ("leverage_ratio_dte", "incentive_fee_pct"):
+    if cell.divergent or cell.metric in (*LEVERAGE_METRICS, "incentive_fee_pct"):
         parts.append(f"[{cell.basis}]")
     if cell.share_class is ShareClass.UNCONFIRMED:
         parts.append("[basis unconfirmed]")
+    # The client's confirmation covered share class and fee treatment. It did
+    # not say which leverage basis their single unlabelled ratio uses, so the
+    # figure is shown and the open question travels with it.
+    elif (
+        cell.fund_ticker == APEX_COLUMN
+        and cell.metric in LEVERAGE_METRICS
+        and not APEX_LEVERAGE_BASIS_CONFIRMED
+    ):
+        parts.append("[leverage basis unconfirmed]")
     return " ".join(parts)
 
 
 def apex_cell(run: BenchmarkRun, metric: str) -> Cell:
     """Apex Ridge's own figure for the anchor quarter.
 
-    Rendered through the same Cell type as the peers, with share class
-    UNCONFIRMED: the client could not confirm which class the CSV represents or
-    whether the net return is net of both fees. The values are theirs and are
-    shown, but the unconfirmed basis is what suppresses derived comparisons.
+    Rendered through the same Cell type as the peers. The client confirmed in
+    Window 3 that the CSV is the institutional share class and that net return
+    is net of both management and incentive fees -- the same basis the peers are
+    held to -- so the class is INSTITUTIONAL and the derived comparisons publish.
+    `APEX_BASIS_CONFIRMED` still gates it: if the client ever retracts, flipping
+    that flag back restores the unconfirmed rendering and re-suppresses every
+    delta, rather than leaving a hard-coded assumption behind.
     """
+    share_class = (
+        ShareClass.INSTITUTIONAL if APEX_BASIS_CONFIRMED else ShareClass.UNCONFIRMED
+    )
     column = APEX_CSV_COLUMNS.get(metric)
     unit = "usd" if metric.endswith("_usd") else ("ratio" if metric.endswith("_dte") else "pct")
     if run.apex is None or run.apex.empty or column not in run.apex.columns:
@@ -116,7 +144,7 @@ def apex_cell(run: BenchmarkRun, metric: str) -> Cell:
             unit=unit,
             as_of=None,
             basis="",
-            share_class=ShareClass.UNCONFIRMED,
+            share_class=share_class,
             reason=ReasonCode.NO_VALUE_FOUND,
             detail="not present in the fund data supplied by Apex Ridge",
         )
@@ -127,8 +155,16 @@ def apex_cell(run: BenchmarkRun, metric: str) -> Cell:
         value=float(row[column]),
         unit=unit,
         as_of=row["period_end"],
-        basis="as supplied by Apex Ridge",
-        share_class=ShareClass.UNCONFIRMED,
+        basis=(
+            # Fee treatment is meaningless on a leverage ratio; saying "net of
+            # fees" there would imply the basis question was answered.
+            "as supplied by Apex Ridge, basis not stated"
+            if metric in LEVERAGE_METRICS
+            else "institutional class, net of management and incentive fees"
+            if APEX_BASIS_CONFIRMED
+            else "as supplied by Apex Ridge"
+        ),
+        share_class=share_class,
         confidence=None,
     )
 

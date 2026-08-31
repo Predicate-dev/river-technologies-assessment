@@ -36,10 +36,13 @@ from bs4 import BeautifulSoup
 
 from ..config import (
     AMENDABLE_FORMS,
+    LEVERAGE_PERIMETER,
     TERMS_METRICS,
     M_DIST_YIELD,
     M_HURDLE,
     M_INCENTIVE_FEE,
+    M_LEVERAGE_ECON,
+    M_LEVERAGE_REG,
     M_MGMT_FEE,
     M_NAV_PS,
     M_RETURN_1Y,
@@ -993,6 +996,167 @@ def _apply_terms_clock(
             cand.flags.append("rate_not_restated_within_window")
 
 
+
+# ------------------------------------------------- CLIENT-RULED LEVERAGE
+
+
+def inline_facts(html: str, tag: str) -> list[tuple[date, float]]:
+    """Consolidated inline-XBRL values for one tag, as (instant, value).
+
+    Reads the filing's own iXBRL rather than the SEC's company-facts API. That
+    API serves only the us-gaap/dei/srt taxonomies, so a company-extension tag
+    -- KREF's `kref:CollateralizedLoanObligationsNet`, the exact balance the CIO
+    ruled out of the perimeter -- is invisible to it. The number is in the 10-K.
+
+    Only contexts with no `<xbrli:segment>` are accepted. A dimensional context
+    carries a member breakdown (one CLO vehicle, one counterparty), and summing
+    or picking from those would double-count against the consolidated figure.
+    """
+    ctx: dict[str, date] = {}
+    for m in re.finditer(r'<xbrli:context id="([^"]+)"(.*?)</xbrli:context>', html, re.S):
+        cid, body = m.group(1), m.group(2)
+        if "<xbrli:segment>" in body:
+            continue  # dimensional: a slice, not the consolidated total
+        inst = re.search(r"<xbrli:instant>(\d{4}-\d{2}-\d{2})</xbrli:instant>", body)
+        if inst:
+            ctx[cid] = date.fromisoformat(inst.group(1))
+
+    out: list[tuple[date, float]] = []
+    for m in re.finditer(r"<ix:nonFraction([^>]*)>(.*?)</ix:nonFraction>", html, re.S):
+        attrs, inner = m.group(1), m.group(2)
+        if _ix_attr(attrs, "name") != tag:
+            continue
+        when = ctx.get(_ix_attr(attrs, "contextRef"))
+        if when is None:
+            continue
+        raw = re.sub(r"<[^>]+>", "", inner).strip().replace(",", "")
+        if not re.fullmatch(r"-?\d+(\.\d+)?", raw):
+            continue
+        value = float(raw) * (10 ** int(_ix_attr(attrs, "scale") or 0))
+        if _ix_attr(attrs, "sign") == "-":
+            value = -value
+        out.append((when, value))
+    return out
+
+
+def _ix_attr(attrs: str, key: str) -> str:
+    m = re.search(key + r'="([^"]*)"', attrs)
+    return m.group(1) if m else ""
+
+
+def _perimeter_value(
+    html: str, tags: tuple[str, ...], when: date
+) -> tuple[str, float] | None:
+    """First of `tags` that reports a consolidated value at exactly `when`."""
+    for tag in tags:
+        for instant, value in inline_facts(html, tag):
+            if instant == when:
+                return tag, value
+    return None
+
+
+def balance_sheet_doc(fund: Fund, client: EdgarClient, anchor: date) -> Doc | None:
+    """The annual report whose balance-sheet date is closest at or before `anchor`.
+
+    Deliberately NOT `load_docs`, which selects on filing date. That is correct
+    for the terms documents it was written for -- a prospectus states the fees in
+    force from the day it is filed -- but wrong here. A balance sheet is a
+    point-in-time measurement, so decision D applies: it is eligible on the
+    period it covers, whenever it happened to be filed. KREF's 2025-12-31 10-K
+    lands in early 2026; selecting on filing date against a Q4 2025 anchor picks
+    the 2024 balance sheet instead and the figure blanks as stale, having been
+    a year out of date rather than absent.
+    """
+    filings = client.filings(fund.cik, forms=["10-K"], limit=8)
+    eligible = [f for f in filings if f.report_date and f.report_date <= anchor]
+    if not eligible:
+        return None
+    best = max(eligible, key=lambda f: f.report_date)
+    blob = client.get(best.primary_url)
+    return Doc(fund, best, blob.decode("utf-8", errors="replace"))
+
+
+def leverage_perimeter(doc: Doc) -> list[Candidate]:
+    """Leverage on the perimeter the client ruled for this filer.
+
+    Emitted only for filers in `LEVERAGE_PERIMETER`, and only from a filing
+    whose balance-sheet date matches the figures being combined -- mixing a
+    current equity with a prior-year debt balance would produce a plausible
+    ratio that is wrong, which is the failure mode this metric already has a
+    history of at the client.
+
+    Both rows use the ruled perimeter. A perimeter is a statement about which
+    obligations count as this filer's leverage, so applying it to the regulatory
+    row and not the economic one would leave the excluded balance visible on one
+    row and not the other -- two numbers claiming to measure the same entity.
+    """
+    spec = LEVERAGE_PERIMETER.get(doc.fund.ticker)
+    if not spec:
+        return []
+
+    period = doc.filing.report_date
+    if period is None:
+        return []
+    eq = _perimeter_value(doc.html, tuple(spec["equity"]), period)
+    if not eq or not eq[1]:
+        return []
+    eq_tag, equity = eq
+
+    out: list[Candidate] = []
+    ruling = str(spec["ruling"])
+
+    # Regulatory: the recourse obligations, summed. Every named tag must be
+    # present -- a partial sum is a smaller, wrong ratio, and it would look
+    # entirely reasonable next to the peers.
+    parts = [_perimeter_value(doc.html, (t,), period) for t in spec["recourse"]]
+    if all(parts):
+        total = sum(v for _, v in parts)  # type: ignore[misc]
+        out.append(
+            Candidate(
+                fund_ticker=doc.fund.ticker,
+                metric=M_LEVERAGE_REG,
+                value=total / equity,
+                unit="ratio",
+                tier=SourceTier.XBRL,
+                provenance=doc.provenance(
+                    "consolidated balance sheet, inline XBRL",
+                    " + ".join(f"{t}={v:,.0f}" for t, v in parts)  # type: ignore[misc]
+                    + f" over {eq_tag}={equity:,.0f} -- {ruling}",
+                ),
+                basis={"leverage_basis": "recourse_debt_to_equity"},
+                transforms=[
+                    f"({' + '.join(t for t, _ in parts)}) / {eq_tag}"  # type: ignore[misc]
+                ],
+                as_of=period,
+            )
+        )
+
+    # Economic: total liabilities less the excluded securitisation.
+    liab = _perimeter_value(doc.html, tuple(spec["liabilities"]), period)
+    sec = _perimeter_value(doc.html, tuple(spec["securitisation"]), period)
+    if liab and sec:
+        liab_tag, liabilities = liab
+        sec_tag, securitisation = sec
+        out.append(
+            Candidate(
+                fund_ticker=doc.fund.ticker,
+                metric=M_LEVERAGE_ECON,
+                value=(liabilities - securitisation) / equity,
+                unit="ratio",
+                tier=SourceTier.XBRL,
+                provenance=doc.provenance(
+                    "consolidated balance sheet, inline XBRL",
+                    f"({liab_tag}={liabilities:,.0f} - {sec_tag}="
+                    f"{securitisation:,.0f}) over {eq_tag}={equity:,.0f} -- {ruling}",
+                ),
+                basis={"leverage_basis": "total_liabilities_ex_securitisation_to_equity"},
+                transforms=[f"({liab_tag} - {sec_tag}) / {eq_tag}"],
+                as_of=period,
+            )
+        )
+    return out
+
+
 def extract_all(
     fund: Fund,
     client: EdgarClient,
@@ -1025,6 +1189,14 @@ def extract_all(
             for cand in out[before:]:
                 if cand.metric == M_INCENTIVE_FEE:
                     cand.basis = {**cand.basis, "applies_to": tiers}
+
+    if anchor is not None and fund.ticker in LEVERAGE_PERIMETER:
+        try:
+            doc = balance_sheet_doc(fund, client, anchor)
+            if doc is not None:
+                out.extend(leverage_perimeter(doc))
+        except Exception:
+            log.exception("leverage perimeter failed for %s", fund.ticker)
 
     kept = [c for c in out if fund.supports(c.metric)]
     if anchor is not None:

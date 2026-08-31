@@ -78,7 +78,15 @@ M_MGMT_FEE = "management_fee_pct"
 M_INCENTIVE_FEE = "incentive_fee_pct"
 M_HURDLE = "incentive_hurdle_pct"
 M_NAV_PS = "nav_per_share_usd"
-M_LEVERAGE = "leverage_ratio_dte"
+# Leverage ships as two metrics, not one row with a basis note. The CIO ruled
+# both bases; the client chose separate rows because "a single row with a basis
+# note is exactly the kind of thing a tired reader misses" -- and a misread
+# leverage figure reaching a board is the incident this engagement exists to
+# prevent. Splitting them also removes the basis-preference judgement call: each
+# row now has one construction, so nothing silently outranks anything.
+M_LEVERAGE_REG = "leverage_regulatory_dte"
+M_LEVERAGE_ECON = "leverage_economic_dte"
+LEVERAGE_METRICS = (M_LEVERAGE_REG, M_LEVERAGE_ECON)
 M_DIST_YIELD = "distribution_yield_pct"
 
 # Metric metadata is owned by the declarative registry (apexridge/metrics.py) so
@@ -107,12 +115,53 @@ AMENDABLE_FORMS = {
     "interval_fund": ("486BPOS", "497", "424B3", "N-CSR", "N-CSRS"),
 }
 
-# Apex Ridge could not confirm the share class its own reported figures
-# represent, or whether the net return is net of both fees or management only.
-# Until it does, peer-minus-Apex deltas and rankings are computed but withheld:
-# a delta between two numbers of unknown basis is the confidently-wrong figure
-# this system exists to prevent. Flip to True when the client confirms.
-APEX_BASIS_CONFIRMED = False
+# CONFIRMED (Window 3): Apex Ridge's CSV is the institutional share class and
+# its net return is net of both management and incentive fees -- the same basis
+# the peers are held to. Deltas and rankings therefore publish. Until this was
+# answered the figures were computed and withheld, because a delta between two
+# numbers of unknown basis is the confidently-wrong figure this system exists
+# to prevent.
+APEX_BASIS_CONFIRMED = True
+
+# Confirming the share class did NOT confirm the leverage basis, and the two are
+# separate questions. Apex's CSV carries one unlabelled `leverage_ratio_dte`
+# column; splitting the peers into regulatory and economic rows forces a choice
+# about which row it belongs in, and nothing on the client side has ever stated
+# one. The gap between the two bases is large -- CCLFX reads 0.32x regulatory
+# against 0.79x economic -- so a delta struck against the wrong row is wrong by
+# more than a factor of two, on the exact metric behind the client's board
+# incident. Apex's figure therefore renders in the regulatory row (its ~1.0x
+# magnitude is borrowings-shaped) but is held out of every leverage delta and
+# ranking until the client states the basis. Flip on their answer.
+APEX_LEVERAGE_BASIS_CONFIRMED = False
+
+# Per-filer leverage perimeter, set by client ruling only -- never inferred.
+#
+# The CIO ruled on KREF specifically: non-recourse securitisation is OUT of its
+# leverage, repo is IN. A mortgage REIT consolidates its CLO vehicles, so the
+# generic constructions (borrowings / equity, total liabilities / equity) both
+# carry $1.2bn of debt that has no recourse to KREF -- the ratio reads as risk
+# the balance sheet does not actually carry.
+#
+# The secured term loan is included on both rows. The ruling named only the two
+# genuinely ambiguous items; a secured term loan is plain recourse corporate
+# debt, and dropping it would need a reason nobody has given. Stated as an
+# assumption in NOTES/questions.md rather than left silent, because this is the
+# metric behind the board incident.
+#
+# `securitisation` is a company-extension tag. The SEC's structured company-facts
+# API serves only us-gaap/dei/srt, so it is unreachable there and this perimeter
+# is computed from the 10-K's own inline XBRL instead. That is the per-filer work
+# the ruling implied.
+LEVERAGE_PERIMETER: dict[str, dict[str, tuple[str, ...] | str]] = {
+    "KREF": {
+        "recourse": ("us-gaap:LineOfCredit", "us-gaap:SecuredDebt"),
+        "securitisation": ("kref:CollateralizedLoanObligationsNet",),
+        "equity": ("us-gaap:StockholdersEquity",),
+        "liabilities": ("us-gaap:Liabilities",),
+        "ruling": "CIO ruling: non-recourse securitisation excluded, repo included",
+    },
+}
 
 # These module-level views are read all over the pipeline. They are derived from
 # the registry, never edited by hand.
@@ -161,7 +210,10 @@ _FUND_METRICS = ALL_METRICS
 # KREF's external-manager agreement does carry an incentive hurdle (7.0% on
 # trailing 12-month adjusted equity), and that IS comparable to Apex Ridge's
 # 6.00% hurdle, so it stays in scope. Trailing fund-style net returns do not.
-_REIT_METRICS = (M_MGMT_FEE, M_INCENTIVE_FEE, M_HURDLE, M_NAV_PS, M_LEVERAGE, M_DIST_YIELD)
+_REIT_METRICS = (
+    M_MGMT_FEE, M_INCENTIVE_FEE, M_HURDLE, M_NAV_PS,
+    M_LEVERAGE_REG, M_LEVERAGE_ECON, M_DIST_YIELD,
+)
 
 FUNDS: tuple[Fund, ...] = (
     Fund(

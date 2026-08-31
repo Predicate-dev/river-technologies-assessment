@@ -101,7 +101,8 @@ def test_a_reit_added_by_discovery_excludes_fund_style_returns():
     """The same rule the configured peer set applies to KREF."""
     fund = to_fund(usable(entity_type="mortgage_reit"))
     assert not any(m.startswith("net_return") for m in fund.supported_metrics)
-    assert "leverage_ratio_dte" in fund.supported_metrics
+    assert "leverage_regulatory_dte" in fund.supported_metrics
+    assert "leverage_economic_dte" in fund.supported_metrics
 
 
 def test_an_interval_fund_added_by_discovery_keeps_returns():

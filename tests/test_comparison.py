@@ -10,8 +10,10 @@ from datetime import date
 
 import apexridge.render.comparison as comparison_module
 from apexridge.config import (
+    ALL_METRICS,
     M_DIST_YIELD,
-    M_LEVERAGE,
+    M_LEVERAGE_ECON,
+    M_LEVERAGE_REG,
     M_MGMT_FEE,
     M_NAV_PS,
     M_RETURN_1Y,
@@ -45,10 +47,16 @@ def test_book_value_is_not_a_nav():
     )
 
 
-def test_leverage_bases_are_distinguished():
-    assert comparability_key(M_LEVERAGE, {"leverage_basis": "gross_debt_to_equity"}) != (
-        comparability_key(M_LEVERAGE, {"leverage_basis": "total_liabilities_to_equity"})
-    )
+def test_leverage_bases_are_separate_metrics_not_one_row():
+    """The CIO's ruling, enforced structurally rather than by a basis label.
+
+    Previously both constructions competed for a single "Leverage (D/E)" row and
+    were kept apart only by their comparability key. They are now two rows, so a
+    regulatory figure can never land in the same distribution as an economic one
+    even if a future extractor forgets to tag its basis.
+    """
+    assert M_LEVERAGE_REG != M_LEVERAGE_ECON
+    assert M_LEVERAGE_REG in ALL_METRICS and M_LEVERAGE_ECON in ALL_METRICS
 
 
 def test_yield_denominator_matters():

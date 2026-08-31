@@ -18,7 +18,6 @@ from typing import Any, Iterator
 from ..config import (
     M_DIST_YIELD,
     M_INCENTIVE_FEE,
-    M_LEVERAGE,
     M_MGMT_FEE,
     M_NAV_PS,
     M_RETURN_1Y,

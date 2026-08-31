@@ -38,8 +38,13 @@ _OWNER = {
         "filer does not publish this concept; no extraction would fix it",
     ),
     SuppressionReason.BASIS_DISQUALIFIED: (
-        CLIENT,
-        "computable, withheld pending a definition the client is deciding",
+        # Was CLIENT while the leverage basis was an open escalation. The CIO
+        # ruled, and the ruling did not rescue this cell: TAKIX reports 0.00 in
+        # every borrowing field, so no regulatory figure exists in its own
+        # disclosure to extract. Nothing the client or we could do fills it.
+        STRUCTURAL,
+        "the filer's reported basis does not measure this metric; its own "
+        "disclosure contains no figure to extract",
     ),
     SuppressionReason.CLASS_ATTRIBUTION_FAILED: (
         OURS,

@@ -32,12 +32,15 @@ from statistics import median
 
 from ..config import (
     APEX_BASIS_CONFIRMED,
+    APEX_LEVERAGE_BASIS_CONFIRMED,
     ALL_METRICS,
     METRIC_LABELS,
     M_DIST_YIELD,
     M_HURDLE,
     M_INCENTIVE_FEE,
-    M_LEVERAGE,
+    LEVERAGE_METRICS,
+    M_LEVERAGE_ECON,
+    M_LEVERAGE_REG,
     M_MGMT_FEE,
     M_NAV_PS,
     M_RETURN_1Y,
@@ -59,7 +62,8 @@ DIRECTION = {
     M_INCENTIVE_FEE: -1,
     M_HURDLE: 1,  # a higher hurdle means carry is earned above a higher bar
     M_NAV_PS: 0,  # a share price, not a quality
-    M_LEVERAGE: 0,  # a risk posture, not a score
+    M_LEVERAGE_REG: 0,  # a risk posture, not a score
+    M_LEVERAGE_ECON: 0,
 }
 
 
@@ -78,7 +82,7 @@ def comparability_key(metric: str, basis: dict[str, object]) -> str:
         return str(basis.get("measure", "nav_per_share"))
     if metric == M_DIST_YIELD:
         return str(basis.get("denominator", ""))
-    if metric == M_LEVERAGE:
+    if metric in LEVERAGE_METRICS:
         return str(basis.get("leverage_basis", ""))
     # Returns and hurdles: every construction here is the same concept, and the
     # share class is already enforced upstream by the render layer.
@@ -176,6 +180,17 @@ def comparison_markdown(run: BenchmarkRun) -> str:
         f"Reporting quarter {run.anchor.isoformat()}.",
         "",
     ]
+    if APEX_BASIS_CONFIRMED and not APEX_LEVERAGE_BASIS_CONFIRMED:
+        lines += [
+            "> **Leverage deltas only are withheld.** The client confirmed the "
+            "share class and fee treatment behind their figures, which is what "
+            "unblocks returns, fees and yield. It did not establish which "
+            "leverage basis their single unlabelled ratio uses, and the two "
+            "bases differ by more than a factor of two. Their figure is shown "
+            "on the regulatory row and kept out of the leverage medians, "
+            "ranges and deltas until they state the basis.",
+            "",
+        ]
     if not APEX_BASIS_CONFIRMED:
         lines += [
             "> **Apex-versus-peer deltas are withheld.** The share class and fee "
@@ -212,6 +227,11 @@ def comparison_markdown(run: BenchmarkRun) -> str:
             apex_cell = "—"
         elif not APEX_BASIS_CONFIRMED:
             apex_cell = f"{format_value(c.apex, unit)} _(delta withheld)_"
+        elif metric in LEVERAGE_METRICS and not APEX_LEVERAGE_BASIS_CONFIRMED:
+            apex_cell = (
+                f"{format_value(c.apex, unit)} _(delta withheld: leverage basis "
+                "unconfirmed)_"
+            )
         else:
             delta = c.apex_delta
             rank = c.apex_rank

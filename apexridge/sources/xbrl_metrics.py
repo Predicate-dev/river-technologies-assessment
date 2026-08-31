@@ -16,7 +16,9 @@ from typing import Any
 from ..config import (
     M_DIST_YIELD,
     M_INCENTIVE_FEE,
-    M_LEVERAGE,
+    LEVERAGE_PERIMETER,
+    M_LEVERAGE_ECON,
+    M_LEVERAGE_REG,
     M_MGMT_FEE,
     M_NAV_PS,
     M_RETURN_1Y,
@@ -130,6 +132,14 @@ def leverage(
     regulatory vs. economic leverage varies by fund.
     """
     out: list[Candidate] = []
+    # A filer with a client-ruled perimeter does not get the generic
+    # constructions at all. Emitting both and letting reconciliation choose
+    # would put an unadjusted ratio in the audit trail as a live alternative to
+    # a ruled one, and the whole point of the ruling is that only one perimeter
+    # is correct for this filer. See sources/narrative.leverage_perimeter.
+    if fund.ticker in LEVERAGE_PERIMETER:
+        return out
+
     eq = _first_available(facts, EQUITY_TAGS, anchor, instant=True)
     if not eq:
         return out
@@ -145,7 +155,7 @@ def leverage(
         if debt_fact.end == eq_fact.end:
             out.append(
                 facts.candidate(
-                    M_LEVERAGE,
+                    M_LEVERAGE_REG,
                     debt_fact,
                     value=debt_fact.val / eq_fact.val,
                     unit="ratio",
@@ -162,7 +172,7 @@ def leverage(
     if liab and liab.end == eq_fact.end and eq_fact.val:
         out.append(
             facts.candidate(
-                M_LEVERAGE,
+                M_LEVERAGE_ECON,
                 liab,
                 value=liab.val / eq_fact.val,
                 unit="ratio",
@@ -181,7 +191,7 @@ def leverage(
     if assets and assets.end == eq_fact.end and eq_fact.val:
         out.append(
             facts.candidate(
-                M_LEVERAGE,
+                M_LEVERAGE_ECON,
                 assets,
                 value=(assets.val - eq_fact.val) / eq_fact.val,
                 unit="ratio",

@@ -1,6 +1,6 @@
 # Coverage breakdown — cell by cell
 
-Reporting quarter 2025-12-31. **31 of 56 competitor cells populated.**
+Reporting quarter 2025-12-31. **30 of 40 competitor cells populated.**
 
 Each empty cell is classified by who owns the gap. The OURS rows are the ones this system can act on; the rest need either a client decision or a filing that does not exist.
 
@@ -15,51 +15,26 @@ Each empty cell is classified by who owns the gap. The OURS rows are the ones th
 | Incentive fee | **0 pct** (Low) | **15 pct** (Low) | **15 pct** (Medium) | **20 pct** (Low) |
 | Incentive hurdle | _STRUCTURAL_ | **6 pct** (Low) | **8 pct** (Low) | **7 pct** (Low) |
 | NAV per share | **10.77 usd** (Low) | **8.32 usd** (Low) | **14.84 usd** (High) | **18.22 usd** (Low) |
-| Leverage (D/E) | **0.3186 ratio** (Medium) | _CLIENT_ | **1.254 ratio** (Medium) | **2.449 ratio** (Medium) |
+| Leverage (D/E), regulatory | **0.3186 ratio** (Medium) | _STRUCTURAL_ | **1.254 ratio** (Medium) | **2.981 ratio** (High) |
+| Leverage (D/E), economic | **0.7868 ratio** (Medium) | **0.4498 ratio** (Medium) | **1.275 ratio** (Medium) | **3.446 ratio** (High) |
 | Distribution yield (ann.) | _CADENCE_ | **9.014 pct** (Medium) | **10.43 pct** (Medium) | **5.449 pct** (Medium) |
-| Portfolio turnover | _CADENCE_ | **13 pct** (Low) | _OURS_ | _STRUCTURAL_ |
-| Non-accrual rate (% of portfolio, fair value) | _OURS_ | _OURS_ | **0.3 pct** (Low) | _OURS_ |
-| Non-accrual rate (% of portfolio, cost) | _OURS_ | _OURS_ | **0.6 pct** (Low) | _OURS_ |
-| Weighted average spread (bps) | _OURS_ | _OURS_ | _OURS_ | _OURS_ |
-| Total annual expenses | **3.27 pct** (Medium) | _OURS_ | **11.77 pct** (Low) | _OURS_ |
 
 ## Where the gaps sit
 
 | Owner | Cells | Meaning |
 | --- | --- | --- |
-| FILLED | 31 | reported with a confidence grade |
-| OURS | 13 | extraction we have not built, or evidence too thin |
-| CADENCE | 5 | figure exists but falls outside the six-month window |
-| CLIENT | 1 | computable, withheld pending a client decision |
+| FILLED | 30 | reported with a confidence grade |
+| OURS | 0 | extraction we have not built, or evidence too thin |
+| CADENCE | 4 | figure exists but falls outside the six-month window |
+| CLIENT | 0 | computable, withheld pending a client decision |
 | STRUCTURAL | 6 | the filer does not publish it; no work would fix it |
 
-### Ours to close (13)
-
-- **CCLFX — Non-accrual rate (% of portfolio, cost)** [no_candidate]: no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below
-- **CCLFX — Non-accrual rate (% of portfolio, fair value)** [no_candidate]: no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below
-- **CCLFX — Weighted average spread (bps)** [no_candidate]: no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below
-- **GBDC — Portfolio turnover** [no_candidate]: no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below
-- **GBDC — Weighted average spread (bps)** [no_candidate]: no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below
-- **KREF — Non-accrual rate (% of portfolio, cost)** [no_candidate]: no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below
-- **KREF — Non-accrual rate (% of portfolio, fair value)** [no_candidate]: no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below
-- **KREF — Total annual expenses** [no_candidate]: no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below
-- **KREF — Weighted average spread (bps)** [no_candidate]: no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below
-- **TAKIX — Non-accrual rate (% of portfolio, cost)** [no_candidate]: no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below
-- **TAKIX — Non-accrual rate (% of portfolio, fair value)** [no_candidate]: no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below
-- **TAKIX — Total annual expenses** [no_candidate]: no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below
-- **TAKIX — Weighted average spread (bps)** [no_candidate]: no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below
-
-### Cadence-limited (5)
+### Cadence-limited (4)
 
 - **CCLFX — Distribution yield (ann.)** [stale_beyond_limit]: figure exists but predates the six-month line
 - **CCLFX — Net return, trailing 1Y (ann.)** [stale_beyond_limit]: figure exists but predates the six-month line
 - **CCLFX — Net return, trailing 3Y (ann.)** [stale_beyond_limit]: figure exists but predates the six-month line
 - **CCLFX — Net return, trailing 5Y (ann.)** [stale_beyond_limit]: figure exists but predates the six-month line
-- **CCLFX — Portfolio turnover** [stale_beyond_limit]: figure exists but predates the six-month line
-
-### Blocked on a client decision (1)
-
-- **TAKIX — Leverage (D/E)** [basis_disqualified]: computable, withheld pending a definition the client is deciding
 
 ### Structural — no work would fix these (6)
 
@@ -68,12 +43,12 @@ Each empty cell is classified by who owns the gap. The OURS rows are the ones th
 - **KREF — Net return, trailing 1Y (ann.)** [not_applicable]: filer does not publish this concept; no extraction would fix it
 - **KREF — Net return, trailing 3Y (ann.)** [not_applicable]: filer does not publish this concept; no extraction would fix it
 - **KREF — Net return, trailing 5Y (ann.)** [not_applicable]: filer does not publish this concept; no extraction would fix it
-- **KREF — Portfolio turnover** [not_applicable]: filer does not publish this concept; no extraction would fix it
+- **TAKIX — Leverage (D/E), regulatory** [basis_disqualified]: the filer's reported basis does not measure this metric; its own disclosure contains no figure to extract
 
 ## Confidence of what is populated
 
 | Grade | Cells |
 | --- | --- |
-| High | 1 |
-| Medium | 13 |
-| Low | 17 |
+| High | 3 |
+| Medium | 14 |
+| Low | 13 |

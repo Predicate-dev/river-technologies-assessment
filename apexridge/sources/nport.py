@@ -20,7 +20,14 @@ from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 from typing import Any, Iterator
 
-from ..config import M_LEVERAGE, M_RETURN_1Y, M_RETURN_3Y, M_RETURN_5Y, Fund
+from ..config import (
+    M_LEVERAGE_ECON,
+    M_LEVERAGE_REG,
+    M_RETURN_1Y,
+    M_RETURN_3Y,
+    M_RETURN_5Y,
+    Fund,
+)
 from ..core.models import (
     Candidate,
     Provenance,
@@ -260,7 +267,7 @@ def leverage(fund: Fund, reports: list[NportReport]) -> list[Candidate]:
         out.append(
             Candidate(
                 fund_ticker=fund.ticker,
-                metric=M_LEVERAGE,
+                metric=M_LEVERAGE_REG,
                 value=rep.borrowings / na,
                 unit="ratio",
                 tier=SourceTier.STRUCTURED_XML,
@@ -280,7 +287,7 @@ def leverage(fund: Fund, reports: list[NportReport]) -> list[Candidate]:
         out.append(
             Candidate(
                 fund_ticker=fund.ticker,
-                metric=M_LEVERAGE,
+                metric=M_LEVERAGE_ECON,
                 value=rep.total_liabilities / na,
                 unit="ratio",
                 tier=SourceTier.STRUCTURED_XML,
