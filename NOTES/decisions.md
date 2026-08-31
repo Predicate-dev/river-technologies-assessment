@@ -849,3 +849,24 @@ basis, and the analyst sourcing results.
   period they cover, whenever filed** -- decision D applied to measurements
   rather than terms. Checked `sources/highlights.py` against the same bug: it
   selects on `report_date <= anchor`, so it is clean.
+
+- **The board table was not deterministic, and the moving part was a basis
+  label.** `max(set(values), key=values.count)` picked each row's reference
+  basis and each row's reference comparability key. Set iteration order over
+  strings varies between processes under hash randomisation, so a two-way tie
+  resolved differently run to run: the basis annotation jumped between TAKIX and
+  GBDC on the trailing-return rows with no data change behind it, and in
+  `comparison.py` the same call decided which peers were excluded from the
+  medians. Replaced both with `cells.modal`, which counts in a dict and breaks
+  ties by first appearance -- funds are iterated in configuration order, so the
+  earliest-listed fund's basis becomes the reference.
+  - Pinned by `tests/test_determinism.py`, which runs subprocesses under
+    different `PYTHONHASHSEED` values. An in-process assertion would have passed
+    against the broken code: one interpreter has one hash seed, so a set
+    iterates consistently for the life of a run and only differs between runs.
+  - Verified end to end: four pipeline runs at seeds 0/1/42/7777 produce
+    byte-identical `benchmark_table.md` and `apex_vs_peers.md`.
+  - Pre-existing, not caused by the leverage split. Worth saying plainly to the
+    client: the README promised reproducible runs and did not deliver them, and
+    a basis marker that moves on its own is indistinguishable in a diff from a
+    number that moved -- in the one metric class that put this engagement here.

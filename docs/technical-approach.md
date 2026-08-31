@@ -1,7 +1,7 @@
 # Technical approach — competitor benchmarking pipeline
 
 **Audience:** Apex Ridge technical counterpart
-**Status:** prototype against live SEC EDGAR · 140 tests · 28 of 40 competitor cells populate at the Q4 2025 anchor
+**Status:** prototype against live SEC EDGAR · 144 tests · 30 of 40 competitor cells populate at the Q4 2025 anchor
 
 ---
 
@@ -20,8 +20,7 @@ EDGAR (live) ─► source adapters ─► candidates ─► eligibility filter
 ```
 
 `edgar.py` is rate-limited to 8 req/s (SEC's ceiling is 10), sends a descriptive
-User-Agent, and caches every response to disk. Caching makes runs deterministic
-and means a demo cannot be broken by a network hiccup.
+User-Agent, and caches every response to disk.
 
 Adapters emit **candidates** — a value plus its evidence — never bare numbers.
 The split is forced by the filers, not chosen:
@@ -37,7 +36,6 @@ The split is forced by the filers, not chosen:
 GBDC and KREF file 10-K/10-Q with rich XBRL. The interval funds file no 10-K and
 have eleven usable `cef:` tags between them, so their fee terms exist only in
 prose and their class-level figures only in the annual and semi-annual reports.
-
 `core/periods.py` rebuilds a non-overlapping distribution ledger by differencing
 fiscal-year-to-date cumulatives; `core/temporal.py` owns the anchor, eligibility
 and staleness; `core/reconcile.py` is the only path that can blank a value;
@@ -60,8 +58,7 @@ consistency probe against the second. Disagreement means the filer's
 balance-sheet tagging is inconsistent and every derived value should be
 downgraded.
 
-**Blanks are typed** — `NOT_APPLICABLE`, `NOT_YET_FILED`, `STALE`,
-`BASIS_DISQUALIFIED`, `SUPPRESSED`. A bare blank raises rather than renders.
+**Blanks are typed** and a bare blank raises rather than renders.
 
 ## 3. Validation and the confidence model
 
@@ -77,9 +74,8 @@ So the score is built only from what we can observe about the extraction:
 score = tier × agreement × freshness × ∏(named penalties)
 ```
 
-- **tier** — the mechanism: typed XBRL fact (0.95), N-PORT schema field (0.92),
-  derived calculation (0.75), parsed table (0.72), prose pattern (0.66), model
-  reading a footnote (0.55). This scores the *mechanism*, not the filer.
+- **tier** — the mechanism: typed XBRL fact (0.95) through to a model reading a
+  footnote (0.55). Scores the *mechanism*, not the filer.
 - **agreement** — the only factor that can raise a score, and the closest thing
   to ground truth available. Corroborated ×1.10, single source ×0.90,
   conflicting ×0.70.
@@ -184,6 +180,7 @@ that leaves the building must not look more complete than the evidence.
 | --- | --- |
 | **Filers change wording; prose patterns stop matching.** Most likely failure. | A miss produces a blank with a reason, never a wrong number — which is why it goes unnoticed. `--compare-to` diffs a run against the previous quarter's coverage, names what stopped populating and why, and exits non-zero so a scheduled run gates on it. |
 | **A filer re-tags XBRL or tags the wrong document.** Already observed. | Cross-mechanism agreement plus plausibility ranges; flagged and suppressed, not trusted on tier. |
+| **Non-determinism in rendering.** Found late, and worth naming: the layer choosing each row's reference basis broke ties with `max(set(...))`, whose iteration order varies between processes. Two clones produced different board tables from identical data — a basis label moving on its own, which in a diff is indistinguishable from a number moving, in the metric class that caused your board incident. | Ties now break by first appearance in configuration order. Tested in subprocesses across five hash seeds; an in-process test would have passed against the broken code. Found by running the pipeline twice and comparing, which no test had done. |
 | **Silent arithmetic drift.** | Day-count annualization with window tolerances; a window that does not match its label is suppressed, not rounded. Ledger arithmetic is unit-tested against real failure modes. |
 | **Source scope expands beyond EDGAR.** Likely. | Adopt web sources only as a distinct, visibly lower tier. A filing has an accession number, an immutable version and a retrievable audit trail; a web page has none. Never blend silently — that would undermine the one property making this defensible. It is a new tier value and a penalty, not a redesign. |
 | **Provenance rots.** | Every value carries accession, form, period, URL, in-document locator and a verbatim excerpt. |

@@ -32,7 +32,7 @@ from ..config import (
 )
 from ..core.models import Cell, Confidence, ReasonCode, ShareClass
 from ..pipeline import BenchmarkRun
-from .cells import build_cell, format_basis
+from .cells import build_cell, format_basis, modal
 
 APEX_COLUMN = "Apex Ridge"
 
@@ -181,7 +181,7 @@ def build_cells(run: BenchmarkRun) -> dict[str, dict[str, Cell]]:
             rm = res.resolved.get(metric)
             if rm is not None and rm.value is not None and rm.chosen is not None:
                 bases.append(format_basis(rm.chosen.basis))
-        reference = max(set(bases), key=bases.count) if bases else ""
+        reference = modal(bases)
 
         for ticker, res in run.results.items():
             row[ticker] = build_cell(res.fund, metric, res.resolved.get(metric), reference)

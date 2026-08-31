@@ -48,7 +48,7 @@ from ..config import (
     M_RETURN_5Y,
 )
 from ..pipeline import BenchmarkRun
-from .cells import format_basis
+from .cells import format_basis, modal
 from .table import APEX_COLUMN, build_cells, format_value
 
 # +1: higher is better for the fund's investors. -1: lower is better.
@@ -151,9 +151,7 @@ def compare(run: BenchmarkRun) -> dict[str, MetricComparison]:
             if cell.value is None or rm is None or rm.chosen is None:
                 continue
             keys[ticker] = comparability_key(metric, rm.chosen.basis)
-        reference = (
-            max(set(keys.values()), key=list(keys.values()).count) if keys else ""
-        )
+        reference = modal(list(keys.values()))
 
         comparison = MetricComparison(
             metric=metric,

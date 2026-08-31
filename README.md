@@ -70,7 +70,7 @@ python -m apexridge --help
 
 ```bash
 pip install -r requirements-dev.txt
-python -m pytest tests/ -q          # 140 tests
+python -m pytest tests/ -q          # 144 tests
 ```
 
 Tests cover the data-correctness path and the failure modes drawn from real
@@ -238,13 +238,22 @@ is discarded, not downgraded.
 
 Requests are self-throttled to 8/second against the SEC's published 10/second
 ceiling, with backoff on 403 and 429, and a descriptive `User-Agent` as they
-require. All filings are cached to `.cache/` by URL, which makes runs
-deterministic and means a demo cannot be broken by a network hiccup.
+require. All filings are cached to `.cache/` by URL, so a demo cannot be broken by a
+network hiccup.
+
+Caching is necessary for reproducibility but was not sufficient: the render
+layer resolved ties with `max(set(...))`, whose iteration order over strings
+varies between processes, so two clones could produce different board tables
+from identical data. Ties are now broken by first appearance in configuration
+order, and `tests/test_determinism.py` runs the pipeline in subprocesses under
+five different hash seeds and asserts byte-identical output. An in-process
+assertion would have passed against the broken code — one interpreter has one
+hash seed.
 
 ## Current status
 
-Prototype. 140 tests passing, running against live EDGAR at the Q4 2025 anchor.
-28 of 40 competitor cells populate; the rest blank with a stated reason, broken
+Prototype. 144 tests passing, running against live EDGAR at the Q4 2025 anchor.
+30 of 40 competitor cells populate; the rest blank with a stated reason, broken
 down cell by cell in `output/coverage_breakdown.md`. Known gaps and their causes
 — some ours, some structural to the filers, and some possibly outside EDGAR
 entirely — are in

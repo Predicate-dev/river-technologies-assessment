@@ -216,3 +216,30 @@ def build_cell(
         as_of=chosen.as_of if chosen else None,
         divergent=bool(reference_basis) and basis != reference_basis,
     )
+
+
+def modal(values: list[str]) -> str:
+    """The most common value, ties broken by first appearance. Never by a set.
+
+    `max(set(values), key=values.count)` reads as the obvious way to do this and
+    is silently non-deterministic: iteration order over a set of strings varies
+    between processes under hash randomisation, so a tie resolves differently
+    from run to run. Two clones of this repo produced different board tables
+    that way -- the basis annotation moved between TAKIX and GBDC on the return
+    rows, with no data change behind it.
+
+    That is a bad failure anywhere and a disqualifying one here. The client's
+    engagement exists because a misread basis reached a board, the README
+    promises reproducible runs, and a reviewer diffing two runs could not tell a
+    moved label from a moved number.
+
+    `values` arrives in a stable order (funds are iterated in configuration
+    order), so first appearance is a real tie-break rather than another
+    arbitrary one: the earliest-listed fund's basis becomes the row reference.
+    """
+    counts: dict[str, int] = {}
+    for v in values:
+        counts[v] = counts.get(v, 0) + 1
+    # dicts preserve insertion order, so max() returns the first-seen maximum.
+    return max(counts, key=counts.get) if counts else ""  # type: ignore[arg-type]
+
