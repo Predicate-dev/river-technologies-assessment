@@ -1,6 +1,6 @@
 # Coverage breakdown — cell by cell
 
-Reporting quarter 2025-12-31. **24 of 36 competitor cells populated.**
+Reporting quarter 2025-12-31. **25 of 36 competitor cells populated.**
 
 Each empty cell is classified by who owns the gap. The OURS rows are the ones this system can act on; the rest need either a client decision or a filing that does not exist.
 
@@ -11,7 +11,7 @@ Each empty cell is classified by who owns the gap. The OURS rows are the ones th
 | Net return, trailing 1Y (ann.) | **8.912 pct** (Low) | **6.27 pct** (Medium) | **8.723 pct** (Low) | _STRUCTURAL_ |
 | Net return, trailing 3Y (ann.) | _CADENCE_ | **10.36 pct** (Medium) | **11.88 pct** (Low) | _STRUCTURAL_ |
 | Net return, trailing 5Y (ann.) | _CADENCE_ | **8.213 pct** (Medium) | _STRUCTURAL_ | _STRUCTURAL_ |
-| Management fee | **1 pct** (Medium) | **1 pct** (Low) | **1 pct** (Medium) | _OURS_ |
+| Management fee | **1 pct** (Medium) | **1 pct** (Low) | **1 pct** (Medium) | **1.5 pct** (Low) |
 | Incentive fee | **0 pct** (Low) | _OURS_ | **15 pct** (Medium) | **20 pct** (Low) |
 | Incentive hurdle | _OURS_ | _OURS_ | **8 pct** (Low) | **7 pct** (Low) |
 | NAV per share | **10.77 usd** (Low) | **8.32 usd** (Low) | **14.84 usd** (High) | **18.22 usd** (Low) |
@@ -22,16 +22,15 @@ Each empty cell is classified by who owns the gap. The OURS rows are the ones th
 
 | Owner | Cells | Meaning |
 | --- | --- | --- |
-| FILLED | 24 | reported with a confidence grade |
-| OURS | 4 | extraction we have not built, or evidence too thin |
+| FILLED | 25 | reported with a confidence grade |
+| OURS | 3 | extraction we have not built, or evidence too thin |
 | CADENCE | 3 | figure exists but falls outside the six-month window |
 | CLIENT | 1 | computable, withheld pending a client decision |
 | STRUCTURAL | 4 | the filer does not publish it; no work would fix it |
 
-### Ours to close (4)
+### Ours to close (3)
 
 - **CCLFX — Incentive hurdle** [no_candidate]: no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below
-- **KREF — Management fee** [no_candidate]: no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below
 - **TAKIX — Incentive fee** [no_candidate]: no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below
 - **TAKIX — Incentive hurdle** [below_confidence_floor]: evidence too thin; needs a second corroborating source
 
@@ -58,4 +57,4 @@ Each empty cell is classified by who owns the gap. The OURS rows are the ones th
 | --- | --- |
 | High | 1 |
 | Medium | 12 |
-| Low | 11 |
+| Low | 12 |

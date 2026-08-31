@@ -125,6 +125,37 @@ def test_quarterly_qualifier_before_the_number_is_still_found():
     assert mult == 4.0
 
 
+# --------------------------------------------------- externally-managed REIT
+
+KREF_FEE = (
+    "For its services to KREF, our Manager is entitled to a quarterly "
+    "management fee equal to the greater of $62,500 or 0.375% of weighted "
+    "average adjusted equity and quarterly incentive compensation equal to "
+    "20.0% of the excess of (a) the trailing 12-month Distributable Earnings"
+)
+
+
+def test_reit_quarterly_management_fee_is_matched():
+    m = _first_match(M_MGMT_FEE, KREF_FEE)
+    assert m is not None and m.group(1) == "0.375"
+
+
+def test_reit_fee_annualization_detector_spans_the_decimal_point():
+    """The gap between "management fee" and "adjusted equity" contains the rate
+    itself, so a no-dot character class can never span it -- and the fee would
+    ship as 0.375% against peers quoting ~1.0% annually."""
+    assert re.search(
+        r"quarterly management fee.{0,140}?weighted average adjusted equity",
+        KREF_FEE,
+        re.I,
+    )
+    assert not re.search(
+        r"quarterly management fee[^.]{0,140}?weighted average adjusted equity",
+        KREF_FEE,
+        re.I,
+    )
+
+
 # ----------------------------------------------------- quote verification
 
 

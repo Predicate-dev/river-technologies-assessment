@@ -29,7 +29,7 @@ GBDC,distribution_yield_pct,FILLED,-,10.43 pct,Medium
 KREF,net_return_1y_pct,not_applicable,STRUCTURAL,filer does not publish this concept; no extraction would fix it,
 KREF,net_return_3y_pct,not_applicable,STRUCTURAL,filer does not publish this concept; no extraction would fix it,
 KREF,net_return_5y_pct,not_applicable,STRUCTURAL,filer does not publish this concept; no extraction would fix it,
-KREF,management_fee_pct,no_candidate,OURS,"no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below",
+KREF,management_fee_pct,FILLED,-,1.5 pct,Low
 KREF,incentive_fee_pct,FILLED,-,20 pct,Low
 KREF,incentive_hurdle_pct,FILLED,-,7 pct,Low
 KREF,nav_per_share_usd,FILLED,-,18.22 usd,Low

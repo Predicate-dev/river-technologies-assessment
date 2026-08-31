@@ -338,7 +338,7 @@ def audit_frame(run: BenchmarkRun) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def write_outputs(run: BenchmarkRun, outdir) -> dict[str, str]:
+def write_outputs(run: BenchmarkRun, outdir, client=None) -> dict[str, str]:
     from pathlib import Path
 
     out = Path(outdir)
@@ -352,4 +352,14 @@ def write_outputs(run: BenchmarkRun, outdir) -> dict[str, str]:
     audit_frame(run).to_csv(audit, index=False)
     coverage.write_text(coverage_markdown(run))
     coverage_frame(run).to_csv(out / "coverage_breakdown.csv", index=False)
-    return {"board": str(board), "audit": str(audit), "coverage": str(coverage)}
+
+    paths = {"board": str(board), "audit": str(audit), "coverage": str(coverage)}
+    if client is not None:
+        from .trend import build_trend, trend_frame, trend_markdown
+
+        series = build_trend(run, client)
+        trend_md = out / "nav_trend.md"
+        trend_md.write_text(trend_markdown(run, series))
+        trend_frame(series).to_csv(out / "nav_trend.csv", index=False)
+        paths["trend"] = str(trend_md)
+    return paths

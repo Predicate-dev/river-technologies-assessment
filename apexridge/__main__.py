@@ -85,7 +85,7 @@ def main(argv: list[str] | None = None) -> int:
         **anchor_kwargs,
     )
 
-    paths = write_outputs(result, args.out)
+    paths = write_outputs(result, args.out, client=client)
     if args.print:
         print(board_markdown(result))
 
@@ -105,7 +105,8 @@ def main(argv: list[str] | None = None) -> int:
     print(
         f"Board table: {paths['board']}\n"
         f"Audit trail: {paths['audit']}\n"
-        f"Coverage:    {paths['coverage']}",
+        f"Coverage:    {paths['coverage']}"
+        + (f"\nNAV trend:   {paths['trend']}" if "trend" in paths else ""),
         file=sys.stderr,
     )
     return 0

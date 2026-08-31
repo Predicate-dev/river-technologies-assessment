@@ -317,6 +317,14 @@ PROSE_RULES: list[tuple[str, tuple[str, ...], list[str], dict[str, Any]]] = [
             r"management fee[^.]{0,160}?at an annual rate of\s*" + _PCT,
             r"annual rate of\s*" + _PCT + r"[^.]{0,80}?(?:of|based upon)[^.]{0,60}?net assets",
             r"management fee[^.]{0,120}?equal to\s*" + _PCT + r"[^.]{0,60}?per annum",
+            # Externally-managed REIT form: "a quarterly management fee equal
+            # to the greater of $62,500 or 0.375% of weighted average adjusted
+            # equity". Quoted per quarter and struck on adjusted equity, so it
+            # needs annualizing, and its base is not the funds' net or managed
+            # assets -- the basis marker is what stops a PM reading it as
+            # like-for-like against them.
+            r"quarterly management fee equal to the greater of\s*\$[\d,]+\s*or\s*"
+            + _PCT + r"\s*of\s+weighted average adjusted equity",
         ],
         {"fee_basis": "stated_annual_rate"},
     ),
@@ -449,6 +457,21 @@ def prose_patterns(doc: Doc) -> list[Candidate]:
                 transforms: list[str] = []
                 flags: list[str] = []
                 note = ""
+                if metric == M_MGMT_FEE and re.search(
+                    # NOT [^.]: the rate itself contains a decimal point, so a
+                    # no-dot gap can never span "fee ... 0.375% ... equity".
+                    r"quarterly management fee.{0,140}?"
+                    r"weighted average adjusted equity",
+                    text,
+                    re.I,
+                ):
+                    # Stated per quarter on adjusted equity. Reported raw it is
+                    # 0.375% against peers quoting ~1.0% annually -- a wrong
+                    # number that looks plausible, which is the worst kind.
+                    value *= 4.0
+                    use_basis = {"fee_basis": "pct_of_adjusted_equity"}
+                    transforms.append("stated quarterly; x4 to annualize")
+                    note = "quarterly rate on adjusted equity"
                 if metric == M_HURDLE:
                     # Context is measured around the captured number, not the
                     # whole match: "annualized hurdle rate of 6.00%" starts

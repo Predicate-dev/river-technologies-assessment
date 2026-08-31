@@ -619,3 +619,21 @@ reached this session relayed by the parallel session, not heard directly.
   the class in the header row; CCLFX uses period phrases, names the class only
   in the heading above the table, and splits negatives across cells as "(0.90"
   then ")". A dropped sign turns a distribution into a gain.
+- **NAV trend built on the client's semi-annual footing.** Semi-annual cadence
+  for every fund, plotted at each filer's own reporting dates rather than
+  interpolated onto a shared grid -- there is no calendar date on which all four
+  report (CCLFX Mar/Sep, TAKIX and KREF Jun/Dec, GBDC Mar/Sep). Interpolating
+  would invent observations no filer published. Cadence and per-point dates are
+  stated on the output.
+- **KREF's management fee is quoted quarterly on adjusted equity.** "the greater
+  of $62,500 or 0.375% of weighted average adjusted equity" -> 1.50% annualized,
+  carrying a pct_of_adjusted_equity basis marker. Reported raw it would read
+  0.375% beside peers quoting ~1.0% annually: a wrong number that looks
+  plausible, which is the worst kind. Bug found in the detector: a `[^.]` gap
+  cannot span the rate because the rate itself contains a decimal point.
+  Regression test added for exactly that.
+- **TAKIX's incentive fee RATE is not in its prospectus summary** -- the hurdle
+  (6.00% annualized) and catch-up are stated, the rate is not. Reported as an
+  honest gap rather than inferred. Lara could not recite it from memory either
+  and asked the system to pull it; the correct answer is that this document does
+  not state it.
