@@ -198,17 +198,16 @@ here can be resolved by building.
    benchmark and some as all-in yield, and the two are not the same number. This
    is the same shape of question as the leverage definition and needs the same
    kind of answer before it can be extracted.
-7. **Non-accrual rate: cost or fair value?** Filers state both in one sentence
-   ("were 0.6% and 0.3%, respectively"). We chose fair value and labelled it.
-   Cheap to confirm, and wrong if unconfirmed.
-8. **Fund browser: curated set or arbitrary search?** SEC's ticker files omit
-   non-traded interval funds entirely, and the name-search endpoint rate-limits
-   heavily. Entering a CIK always works. If a curated set they extend is
-   acceptable, the feature is done; if they need reliable name search across all
-   fund types, that is EDGAR full-text search integration and more work.
-9. **Should an added fund persist between runs?** `--add-cik` is currently
-   per-run. A saved peer set is a small change but a different mental model, and
-   it raises who owns the list -- the CIO owns the peer list today.
+7. **RESOLVED BY BUILDING — not a question any more.** Non-accrual now ships on
+   *both* bases as two metrics (0.6% cost, 0.3% fair value for GBDC). The basis
+   is a render choice from data already extracted, not a blocking question.
+8. **RESOLVED BY BUILDING.** Fund search now runs on EDGAR full-text search,
+   which is the only SEC index that sees non-traded interval funds -- it finds
+   CCLFX and returns its ticker, which the ticker files omit entirely. The
+   browse-edgar endpoint that rate-limited is now a fallback, not the path.
+9. **RESOLVED BY BUILDING.** `--save-peers` / `--peers` persist a peer set as
+   readable JSON. Worth *telling* her the CIO can inspect the list without
+   running anything, but there is nothing to decide.
 10. **Does the Word document need their house template?** It is attached to a
     board deck. Currently generic Word styling. A template, fonts or a logo is
     trivial to apply and impossible to guess.

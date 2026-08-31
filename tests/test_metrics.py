@@ -107,7 +107,11 @@ def test_shipped_example_file_is_valid():
     """The example shipped in the repo must parse, or the first thing a user
     copies is broken."""
     registry = build_registry("metrics/custom_metrics.json")
-    assert len(registry.custom) == 3
+    # Four: portfolio turnover, non-accrual on both bases, weighted average
+    # spread. The non-accrual pair is deliberate -- filers state cost and fair
+    # value in one sentence, so shipping both makes the basis a render choice
+    # rather than a question that blocks extraction.
+    assert len(registry.custom) == 4
     for spec in registry.custom:
         assert spec.label and spec.unit
         assert spec.prose_patterns or spec.highlights_rows or spec.xbrl_tags

@@ -8,6 +8,10 @@ CCLFX,incentive_hurdle_pct,not_applicable,STRUCTURAL,filer does not publish this
 CCLFX,nav_per_share_usd,FILLED,-,10.77 usd,Low
 CCLFX,leverage_ratio_dte,FILLED,-,0.3186 ratio,Medium
 CCLFX,distribution_yield_pct,stale_beyond_limit,CADENCE,figure exists but predates the six-month line,
+CCLFX,portfolio_turnover_pct,stale_beyond_limit,CADENCE,figure exists but predates the six-month line,
+CCLFX,non_accrual_rate_fv_pct,no_candidate,OURS,"no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below",
+CCLFX,non_accrual_rate_cost_pct,no_candidate,OURS,"no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below",
+CCLFX,weighted_avg_spread_bps,no_candidate,OURS,"no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below",
 TAKIX,net_return_1y_pct,FILLED,-,6.27 pct,Medium
 TAKIX,net_return_3y_pct,FILLED,-,10.36 pct,Medium
 TAKIX,net_return_5y_pct,FILLED,-,8.213 pct,Medium
@@ -17,6 +21,10 @@ TAKIX,incentive_hurdle_pct,FILLED,-,6 pct,Low
 TAKIX,nav_per_share_usd,FILLED,-,8.32 usd,Low
 TAKIX,leverage_ratio_dte,basis_disqualified,CLIENT,"computable, withheld pending a definition the client is deciding",
 TAKIX,distribution_yield_pct,FILLED,-,9.014 pct,Medium
+TAKIX,portfolio_turnover_pct,FILLED,-,13 pct,Low
+TAKIX,non_accrual_rate_fv_pct,no_candidate,OURS,"no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below",
+TAKIX,non_accrual_rate_cost_pct,no_candidate,OURS,"no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below",
+TAKIX,weighted_avg_spread_bps,no_candidate,OURS,"no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below",
 GBDC,net_return_1y_pct,FILLED,-,8.723 pct,Low
 GBDC,net_return_3y_pct,FILLED,-,11.88 pct,Low
 GBDC,net_return_5y_pct,window_mismatch,STRUCTURAL,filer's tagged history does not span the labelled window,
@@ -26,6 +34,10 @@ GBDC,incentive_hurdle_pct,FILLED,-,8 pct,Low
 GBDC,nav_per_share_usd,FILLED,-,14.84 usd,High
 GBDC,leverage_ratio_dte,FILLED,-,1.254 ratio,Medium
 GBDC,distribution_yield_pct,FILLED,-,10.43 pct,Medium
+GBDC,portfolio_turnover_pct,no_candidate,OURS,"no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below",
+GBDC,non_accrual_rate_fv_pct,FILLED,-,0.3 pct,Low
+GBDC,non_accrual_rate_cost_pct,FILLED,-,0.6 pct,Low
+GBDC,weighted_avg_spread_bps,no_candidate,OURS,"no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below",
 KREF,net_return_1y_pct,not_applicable,STRUCTURAL,filer does not publish this concept; no extraction would fix it,
 KREF,net_return_3y_pct,not_applicable,STRUCTURAL,filer does not publish this concept; no extraction would fix it,
 KREF,net_return_5y_pct,not_applicable,STRUCTURAL,filer does not publish this concept; no extraction would fix it,
@@ -35,3 +47,7 @@ KREF,incentive_hurdle_pct,FILLED,-,7 pct,Low
 KREF,nav_per_share_usd,FILLED,-,18.22 usd,Low
 KREF,leverage_ratio_dte,FILLED,-,2.449 ratio,Medium
 KREF,distribution_yield_pct,FILLED,-,5.449 pct,Medium
+KREF,portfolio_turnover_pct,not_applicable,STRUCTURAL,filer does not publish this concept; no extraction would fix it,
+KREF,non_accrual_rate_fv_pct,no_candidate,OURS,"no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below",
+KREF,non_accrual_rate_cost_pct,no_candidate,OURS,"no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below",
+KREF,weighted_avg_spread_bps,no_candidate,OURS,"no EDGAR source located; either extraction we have not built, or the figure is not in the filings at all -- see the caveat below",

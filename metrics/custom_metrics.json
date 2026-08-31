@@ -17,8 +17,8 @@
     "note": "Reported in the financial-highlights table of N-CSR/N-CSRS. No direction: high turnover is a strategy choice, not a quality."
   },
   {
-    "key": "non_accrual_rate_pct",
-    "label": "Non-accrual rate (% of portfolio)",
+    "key": "non_accrual_rate_fv_pct",
+    "label": "Non-accrual rate (% of portfolio, fair value)",
     "unit": "pct",
     "direction": -1,
     "sane_range": [
@@ -33,7 +33,26 @@
       "non-?accrual investments as a percentage of total investments at cost and fair value were\\s*[0-9.]+\\s*%\\s*and\\s*([0-9]{1,2}(?:\\.[0-9]{1,2})?)\\s*%",
       "non-?accrual[^.]{0,100}?at fair value[^.]{0,60}?([0-9]{1,2}(?:\\.[0-9]{1,2})?)\\s*%"
     ],
-    "note": "Proxy for default rate, on a FAIR VALUE basis. Filers commonly state cost and fair value in the same sentence -- 'were 0.6% and 0.3%, respectively' -- and the two are not interchangeable. Disclosed in 10-K narrative, not tagged."
+    "note": "Proxy for default rate on a FAIR VALUE basis. Shipped alongside the cost-basis version so the choice of basis is a render decision rather than a question that blocks extraction -- filers state both in one sentence and the two are not interchangeable."
+  },
+  {
+    "key": "non_accrual_rate_cost_pct",
+    "label": "Non-accrual rate (% of portfolio, cost)",
+    "unit": "pct",
+    "direction": -1,
+    "sane_range": [
+      0.0,
+      40.0
+    ],
+    "prose_anchors": [
+      "non-accrual",
+      "nonaccrual"
+    ],
+    "prose_patterns": [
+      "non-?accrual investments as a percentage of total investments at cost and fair value were\\s*([0-9]{1,2}(?:\\.[0-9]{1,2})?)\\s*%",
+      "non-?accrual[^.]{0,100}?at cost[^.]{0,60}?([0-9]{1,2}(?:\\.[0-9]{1,2})?)\\s*%"
+    ],
+    "note": "Same disclosure, COST basis. Cost runs higher than fair value because written-down positions carry less fair value; comparing one fund's cost figure against another's fair-value figure would overstate the difference."
   },
   {
     "key": "weighted_avg_spread_bps",

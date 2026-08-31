@@ -69,6 +69,16 @@ def main(argv: list[str] | None = None) -> int:
              "classification is not confident.",
     )
     parser.add_argument(
+        "--peers", metavar="JSON", default=None,
+        help="A saved peer set to use instead of the configured four. Written "
+             "by --save-peers.",
+    )
+    parser.add_argument(
+        "--save-peers", metavar="JSON", default=None,
+        help="Write the peer set used by this run to a JSON file, so funds "
+             "added with --add-cik persist.",
+    )
+    parser.add_argument(
         "--metrics", metavar="JSON", default=None,
         help="A JSON file of custom metric definitions, added to the built-in "
              "set. See metrics/custom_metrics.json for the format.",
@@ -141,6 +151,19 @@ def main(argv: list[str] | None = None) -> int:
         )
 
     funds = FUNDS
+    if args.peers:
+        from .discovery import load_peers
+
+        if not Path(args.peers).exists():
+            parser.error(f"peer set not found: {args.peers}")
+        try:
+            funds = load_peers(args.peers)
+        except (OSError, ValueError, KeyError) as exc:
+            parser.error(f"could not read {args.peers}: {exc}")
+        print(
+            f"Peer set: {len(funds)} fund(s) from {args.peers}", file=sys.stderr
+        )
+
     if args.funds:
         wanted = {t.upper() for t in args.funds}
         funds = tuple(f for f in FUNDS if f.ticker in wanted)
@@ -171,6 +194,11 @@ def main(argv: list[str] | None = None) -> int:
                 f"fiscal year end {f.fiscal_year_end}",
                 file=sys.stderr,
             )
+
+    if args.save_peers:
+        from .discovery import save_peers
+
+        print(f"Peer set written to {save_peers(funds, args.save_peers)}", file=sys.stderr)
 
     anchor_kwargs = {"anchor": args.anchor} if args.anchor else {}
 

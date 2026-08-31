@@ -34,10 +34,16 @@ from .edgar import EdgarClient
 log = logging.getLogger(__name__)
 
 TICKER_FILE = "https://www.sec.gov/files/company_tickers.json"
+# EDGAR full-text search. Preferred over the legacy browse-edgar endpoint, which
+# rate-limits and times out heavily, and -- more importantly -- over the ticker
+# files, which omit non-traded interval funds entirely. Full-text search finds
+# CCLFX and returns its ticker, which no other SEC index does.
+FULL_TEXT_SEARCH = "https://efts.sec.gov/LATEST/search-index?q={q}"
 NAME_SEARCH = (
     "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&company={q}"
     "&type=&dateb=&owner=include&count=40&output=atom"
 )
+_DISPLAY = re.compile(r"^(?P<name>.+?)\s*(?:\((?P<ticker>[A-Z]{2,6})\)\s*)?\(CIK\s*(?P<cik>\d+)\)")
 
 # Forms that identify what a filer is. An interval fund files N-CSR and never a
 # 10-K; a BDC files both a 10-K and BDC-specific closed-end fund tags; a REIT
@@ -98,11 +104,34 @@ def _annual_period_end(recent: dict) -> date | None:
     return best
 
 
+def _from_full_text(client: EdgarClient, query: str) -> dict[str, SearchHit]:
+    """Candidates from EDGAR full-text search, the only index that sees all
+    fund types."""
+    hits: dict[str, SearchHit] = {}
+    url = FULL_TEXT_SEARCH.format(q=urllib.parse.quote(f'"{query}"'))
+    payload = json.loads(client.get(url))
+    for hit in payload.get("hits", {}).get("hits", []):
+        src = hit.get("_source", {})
+        for display in src.get("display_names", []):
+            m = _DISPLAY.match(display.strip())
+            if not m:
+                continue
+            cik = str(int(m.group("cik")))
+            existing = hits.get(cik)
+            ticker = m.group("ticker") or (existing.ticker if existing else "")
+            hits[cik] = SearchHit(
+                cik=cik, name=m.group("name").strip(), ticker=ticker or ""
+            )
+    return hits
+
+
 def search(client: EdgarClient, query: str, limit: int = 15) -> list[SearchHit]:
     """Candidate filers matching a name or ticker. Never auto-resolves.
 
-    Ticker lookup first because it is exact when it works; name search after,
-    because it is the only route to the non-traded funds.
+    Exact ticker lookup first because it is unambiguous when it works, then
+    full-text search, which is the only SEC index that sees non-traded interval
+    funds -- the ticker files omit them entirely and the legacy company-search
+    endpoint rate-limits to the point of being unusable.
     """
     hits: dict[str, SearchHit] = {}
     q = query.strip()
@@ -115,22 +144,13 @@ def search(client: EdgarClient, query: str, limit: int = 15) -> list[SearchHit]:
                     cik=str(row["cik_str"]), name=row["title"], ticker=row["ticker"]
                 )
     except Exception:
-        log.warning("ticker file unavailable; falling back to name search only")
+        log.info("ticker file unavailable; relying on full-text search")
 
     try:
-        raw = client.get(NAME_SEARCH.format(q=urllib.parse.quote(q))).decode(
-            "utf-8", errors="replace"
-        )
-        for m in re.finditer(
-            r"<CIK>(\d+)</CIK>.*?<conformed-name>([^<]+)</conformed-name>", raw, re.S
-        ):
-            cik, name = m.group(1), m.group(2).strip()
-            hits.setdefault(str(int(cik)), SearchHit(cik=str(int(cik)), name=name))
-        if not hits:
-            for cik in re.findall(r"<CIK>(\d+)</CIK>", raw):
-                hits.setdefault(str(int(cik)), SearchHit(cik=str(int(cik)), name=""))
+        for cik, hit in _from_full_text(client, q).items():
+            hits.setdefault(cik, hit)
     except Exception as exc:
-        log.warning("name search failed for %r: %s", q, exc)
+        log.warning("full-text search failed for %r: %s", q, exc)
 
     return list(hits.values())[:limit]
 
@@ -251,3 +271,65 @@ def to_fund(c: Classification, institutional_class: str = "") -> Fund:
         or ("Class I" if c.entity_type == "interval_fund" else ""),
         notes="added via fund discovery; classification: " + "; ".join(c.reasons),
     )
+
+
+# --------------------------------------------------------------- peer sets
+
+
+def fund_to_dict(f: Fund) -> dict:
+    return {
+        "name": f.name,
+        "ticker": f.ticker,
+        "cik": f.cik,
+        "entity_type": f.entity_type,
+        "fiscal_year_end": f.fiscal_year_end,
+        "primary_forms": list(f.primary_forms),
+        "supported_metrics": list(f.supported_metrics),
+        "institutional_class": f.institutional_class,
+        "notes": f.notes,
+    }
+
+
+def save_peers(funds: tuple[Fund, ...], path) -> str:
+    """Persist a peer set so it survives between runs.
+
+    Written as plain JSON rather than a pickle so a reviewer can read it, and
+    so the CIO -- who owns the peer list -- can see exactly what is in it
+    without running anything.
+    """
+    from pathlib import Path as _Path
+
+    p = _Path(path)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps([fund_to_dict(f) for f in funds], indent=2) + "\n")
+    return str(p)
+
+
+def load_peers(path) -> tuple[Fund, ...]:
+    """Read a saved peer set.
+
+    Classification is NOT re-derived here: it was established from filings when
+    the fund was added, and silently re-classifying on load could change which
+    extractors run without anyone asking for it. Re-add the fund to refresh it.
+    """
+    from pathlib import Path as _Path
+
+    raw = json.loads(_Path(path).read_text())
+    if not isinstance(raw, list):
+        raise ValueError(f"{path}: expected a JSON list of funds")
+    out = []
+    for r in raw:
+        out.append(
+            Fund(
+                name=r["name"],
+                ticker=r["ticker"],
+                cik=r["cik"],
+                entity_type=r["entity_type"],
+                fiscal_year_end=r["fiscal_year_end"],
+                primary_forms=tuple(r.get("primary_forms", ())),
+                supported_metrics=tuple(r.get("supported_metrics", ())),
+                institutional_class=r.get("institutional_class", ""),
+                notes=r.get("notes", ""),
+            )
+        )
+    return tuple(out)

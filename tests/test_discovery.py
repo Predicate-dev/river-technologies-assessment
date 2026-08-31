@@ -11,7 +11,15 @@ from datetime import date
 
 import pytest
 
-from apexridge.discovery import Classification, _annual_period_end, to_fund
+from apexridge.config import Fund
+from apexridge.discovery import (
+    Classification,
+    _DISPLAY,
+    _annual_period_end,
+    load_peers,
+    save_peers,
+    to_fund,
+)
 
 
 def submissions(forms_and_reports: list[tuple[str, str]]) -> dict:
@@ -99,3 +107,57 @@ def test_a_reit_added_by_discovery_excludes_fund_style_returns():
 def test_an_interval_fund_added_by_discovery_keeps_returns():
     fund = to_fund(usable(entity_type="interval_fund"))
     assert "net_return_1y_pct" in fund.supported_metrics
+
+
+# ------------------------------------------------------- full-text search
+
+
+def test_display_name_parses_name_ticker_and_cik():
+    """EDGAR full-text search is the only SEC index that sees non-traded
+    interval funds -- the ticker files omit them entirely -- and it is the only
+    place CCLFX's ticker appears alongside its CIK."""
+    m = _DISPLAY.match("Cliffwater Corporate Lending Fund  (CCLFX)  (CIK 0001735964)")
+    assert m is not None
+    assert m.group("name").strip() == "Cliffwater Corporate Lending Fund"
+    assert m.group("ticker") == "CCLFX"
+    assert m.group("cik") == "0001735964"
+
+
+def test_display_name_parses_without_a_ticker():
+    m = _DISPLAY.match("Carlyle Tactical Private Credit Fund  (CIK 0001725472)")
+    assert m is not None
+    assert m.group("ticker") is None
+    assert m.group("cik") == "0001725472"
+
+
+# ------------------------------------------------------------- peer sets
+
+
+def test_peer_set_round_trips(tmp_path):
+    fund = to_fund(usable(entity_type="interval_fund", name="Test Interval"))
+    path = tmp_path / "peers.json"
+    save_peers((fund,), path)
+    back = load_peers(path)
+    assert len(back) == 1
+    assert back[0].entity_type == "interval_fund"
+    assert back[0].fiscal_year_end == fund.fiscal_year_end
+    assert back[0].institutional_class == fund.institutional_class
+
+
+def test_a_saved_peer_set_is_readable_json(tmp_path):
+    """The CIO owns the peer list. It should be inspectable without running
+    anything."""
+    import json
+
+    fund = to_fund(usable())
+    path = tmp_path / "peers.json"
+    save_peers((fund,), path)
+    data = json.loads(path.read_text())
+    assert data[0]["cik"] and data[0]["entity_type"]
+
+
+def test_loading_a_malformed_peer_set_raises(tmp_path):
+    path = tmp_path / "peers.json"
+    path.write_text('{"not": "a list"}')
+    with pytest.raises(ValueError):
+        load_peers(path)
