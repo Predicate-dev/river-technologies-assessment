@@ -1,7 +1,7 @@
 # Technical approach — competitor benchmarking pipeline
 
 **Audience:** Apex Ridge technical counterpart
-**Status:** prototype against live SEC EDGAR · 112 tests · 26 of 36 competitor cells populate at the Q4 2025 anchor
+**Status:** prototype against live SEC EDGAR · 114 tests · 26 of 36 competitor cells populate at the Q4 2025 anchor
 
 ---
 

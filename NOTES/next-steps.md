@@ -3,8 +3,8 @@
 ## State
 
 `python -m apexridge` runs end to end against live EDGAR in ~8s cold, one
-command, no manual steps. 69 tests passing.
-**26 of 36 competitor cells populate** at the Q4 2025 anchor.
+command, no manual steps. 114 tests passing.
+**26 of 36 competitor cells populate** (28 of 48 with the custom metrics enabled) at the Q4 2025 anchor.
 
 Outputs: board table, coverage breakdown, NAV trend (semi-annual), audit trail
 (one row per candidate, rejects included).
